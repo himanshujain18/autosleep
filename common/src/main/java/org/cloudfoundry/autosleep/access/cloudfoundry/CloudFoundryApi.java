@@ -41,6 +41,8 @@ import org.cloudfoundry.client.v2.events.EventEntity;
 import org.cloudfoundry.client.v2.events.EventResource;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.events.ListEventsResponse;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 import org.cloudfoundry.client.v2.routes.GetRouteRequest;
 import org.cloudfoundry.client.v2.routes.GetRouteResponse;
 import org.cloudfoundry.client.v2.routes.ListRouteApplicationsRequest;
@@ -450,6 +452,26 @@ public class CloudFoundryApi implements CloudFoundryApiService {
             log.error(e.getMessage());
             return null;
         }
+    }
+    
+    @Override
+    public GetOrganizationResponse getOrganizationDetails(String organizationId) 
+            throws org.cloudfoundry.client.v2.CloudFoundryException {
+
+        GetOrganizationResponse response;
+        try {
+            GetOrganizationRequest request = GetOrganizationRequest.builder()
+                    .organizationId(organizationId).build();    
+
+            response = cfClient.organizations().get(request).get();
+
+            if (response != null) {
+                log.info("OrganizationId : " + organizationId + " is valid organization");
+            }
+        } catch (org.cloudfoundry.client.v2.CloudFoundryException re) {
+            throw re;
+        }
+        return response;
     }
 
 }

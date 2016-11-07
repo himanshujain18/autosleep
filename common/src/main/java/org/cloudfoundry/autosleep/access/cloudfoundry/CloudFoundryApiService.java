@@ -21,6 +21,7 @@ package org.cloudfoundry.autosleep.access.cloudfoundry;
 
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationActivity;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -36,6 +37,8 @@ public interface CloudFoundryApiService {
     String getApplicationState(String applicationUuid) throws CloudFoundryException;
 
     String getHost(String routeId) throws CloudFoundryException;
+
+    GetOrganizationResponse getOrganizationDetails(String organizationId) throws CloudFoundryException; 
 
     boolean isAppRunning(String appUid) throws CloudFoundryException;
 
