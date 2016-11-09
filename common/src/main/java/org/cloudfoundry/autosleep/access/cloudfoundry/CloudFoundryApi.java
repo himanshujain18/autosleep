@@ -457,7 +457,6 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     @Override
     public GetOrganizationResponse getOrganizationDetails(String organizationId) 
             throws org.cloudfoundry.client.v2.CloudFoundryException {
-
         GetOrganizationResponse response;
         try {
             GetOrganizationRequest request = GetOrganizationRequest.builder()

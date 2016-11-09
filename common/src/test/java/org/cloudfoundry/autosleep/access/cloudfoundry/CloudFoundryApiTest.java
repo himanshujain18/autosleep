@@ -46,6 +46,7 @@ import org.cloudfoundry.client.v2.events.EventResource;
 import org.cloudfoundry.client.v2.events.Events;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.events.ListEventsResponse;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 import org.cloudfoundry.client.v2.routes.GetRouteRequest;
 import org.cloudfoundry.client.v2.routes.GetRouteResponse;
 import org.cloudfoundry.client.v2.routes.ListRouteApplicationsRequest;
@@ -106,6 +107,9 @@ public class CloudFoundryApiTest {
 
     @Mock
     private LoggingClient logClient;
+    
+    @Mock
+    private CloudFoundryApi cfFoundryApi;
 
     private void mockGetApplication(ApplicationsV2 mockApplications, String name, String applicationState) {
         when(mockApplications.get(any(GetApplicationRequest.class)))
@@ -597,5 +601,23 @@ public class CloudFoundryApiTest {
         cloudFoundryApi.unbind("service-binding-id");
         verify(serviceBindings, times(1)).delete(any(DeleteServiceBindingRequest.class));
     }
+    
+    @Test
+    public void test_getOrganizationDetails_when_found() throws org.cloudfoundry.client.v2.CloudFoundryException {
+        String fakeOrgId = "fakeId";
+        GetOrganizationResponse response = 
+                GetOrganizationResponse.builder().metadata(Metadata.builder().id(fakeOrgId).build()).build();   
+        when(cfFoundryApi.getOrganizationDetails(fakeOrgId)).thenReturn(response);
+        assertEquals("getOrganizationFound",cfFoundryApi.getOrganizationDetails(fakeOrgId),response);  
 
+    }
+
+    @Test
+    public void test_getOrganizationDetails_when_not_found() throws org.cloudfoundry.client.v2.CloudFoundryException {
+        String fakeOrgId = "fakeId";
+        GetOrganizationResponse response = null;
+        when(cfFoundryApi.getOrganizationDetails(fakeOrgId)).thenReturn(response);
+        assertEquals("getOrganizationNotFound",cfFoundryApi.getOrganizationDetails(fakeOrgId),response);  
+
+    }
 }
