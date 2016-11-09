@@ -56,7 +56,7 @@ public class AutosleepConfigControllerUtilsTest {
 
         fakeRequest.setIdleDuration("PT1M");
         fakeResponseJson.setParameter("idle-duration");
-        fakeResponseJson.setValue("PT1M");
+        fakeResponseJson.setValue(fakeRequest.getIdleDuration());
         ArrayList<AutosleepConfigControllerResponse> fakeValidatedResponse = 
                 new ArrayList<AutosleepConfigControllerResponse>();
         fakeValidatedResponse.add(fakeResponseJson);
