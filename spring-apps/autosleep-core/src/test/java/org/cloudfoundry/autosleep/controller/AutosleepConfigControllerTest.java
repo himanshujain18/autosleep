@@ -81,11 +81,9 @@ public class AutosleepConfigControllerTest {
     @Test
     public void test_enrollOrganization_update() throws CloudFoundryException { 
 
-        fakeRequest = new AutosleepConfigControllerRequest();
-        Boolean fakeFlag = true;
+        fakeRequest = new AutosleepConfigControllerRequest();  
         orgInfo = null; 
-        AutosleepConfigControllerResponse fakeResponseJson = new AutosleepConfigControllerResponse();
-        fakeRequest.setOrganizationId(fakeOrgID);
+        AutosleepConfigControllerResponse fakeResponseJson = new AutosleepConfigControllerResponse(); 
         fakeResponseJson.setParameter("OrganizationId");        
         GetOrganizationResponse responseOrg = 
                 GetOrganizationResponse.builder().metadata(Metadata.builder().id(fakeOrgID).build()).build(); 
@@ -93,7 +91,7 @@ public class AutosleepConfigControllerTest {
         when(cloudFoundryApi.getOrganizationDetails(fakeOrgID)).thenReturn(responseOrg);
         assertEquals("enrolledOrganizationInValidInput",cloudFoundryApi.getOrganizationDetails(fakeOrgID),
                 responseOrg);
-        fakeResponseJson.setValue(fakeRequest.getOrganizationId());
+        fakeResponseJson.setValue(fakeOrgID);
         fakeResponseJson.setError(null);
         ArrayList<AutosleepConfigControllerResponse> fakeValidatedResponse = 
                 new ArrayList<AutosleepConfigControllerResponse>();
@@ -104,17 +102,11 @@ public class AutosleepConfigControllerTest {
         fakeResponseJson.setValue(fakeRequest.getIdleDuration());
         fakeValidatedResponse.add(fakeResponseJson);
 
-        when(fakeUtils.validateRequestBody(fakeRequest)).thenReturn(fakeValidatedResponse);
+        when(fakeUtils.validateRequestBody(fakeRequest)).thenReturn(fakeResponseJson);
         assertEquals("validateRequest",fakeUtils.validateRequestBody(fakeRequest),
-                fakeValidatedResponse);
+                fakeResponseJson);
 
-        for (AutosleepConfigControllerResponse item:fakeValidatedResponse) {
-            if (item.getError() != null) {
-                fakeFlag = false;
-            }
-        }
-
-        assertEquals("NoInvalidInputForUpdate", fakeFlag, true);
+        assertEquals("NoInvalidInputForUpdate", fakeResponseJson.getError(), null);
 
         orgInfo = EnrolledOrganizationConfig.builder().organizationId(fakeOrgID).build();
 
@@ -137,12 +129,9 @@ public class AutosleepConfigControllerTest {
     public void test_enrollOrganization_created() throws CloudFoundryException { 
 
         fakeRequest = new AutosleepConfigControllerRequest();
-        Boolean fakeFlag = true;
         orgInfo = null; 
 
         AutosleepConfigControllerResponse fakeResponseJson = new AutosleepConfigControllerResponse();
-
-        fakeRequest.setOrganizationId(fakeOrgID);
         fakeResponseJson.setParameter("OrganizationId");
         GetOrganizationResponse responseOrg = 
                 GetOrganizationResponse.builder().metadata(Metadata.builder().id(fakeOrgID).build()).build(); 
@@ -160,20 +149,12 @@ public class AutosleepConfigControllerTest {
         fakeResponseJson.setValue("PT1M");
         fakeValidatedResponse.add(fakeResponseJson);
 
-        when(fakeUtils.validateRequestBody(fakeRequest)).thenReturn(fakeValidatedResponse);
+        when(fakeUtils.validateRequestBody(fakeRequest)).thenReturn(fakeResponseJson);
         assertEquals("validateRequest",fakeUtils.validateRequestBody(fakeRequest),
-                fakeValidatedResponse);
-
-        for (AutosleepConfigControllerResponse item:fakeValidatedResponse) {
-            if (item.getError() != null) {
-                fakeFlag = false;
-            }
-        }
-
-        assertEquals("NoInvalidInputForCreate", fakeFlag, true);
+                fakeResponseJson);
+        assertEquals("NoInvalidInputForCreate", fakeResponseJson.getError(), null);
 
         orgInfo = EnrolledOrganizationConfig.builder().organizationId(fakeOrgID).build();
-
         when(orgRepository.findOne(fakeOrgID)).thenReturn(orgInfo);
         assertEquals("findOneAssert",orgRepository.findOne(fakeOrgID),orgInfo);
 
@@ -195,7 +176,6 @@ public class AutosleepConfigControllerTest {
         fakeRequest = new AutosleepConfigControllerRequest();
         orgInfo = null; 
 
-        fakeRequest.setOrganizationId(fakeOrgID);
         AutosleepConfigControllerResponse fakeResponseJson = new AutosleepConfigControllerResponse();
         fakeResponseJson.setParameter("OrganizationId");        
         GetOrganizationResponse responseOrg = null;
@@ -206,7 +186,6 @@ public class AutosleepConfigControllerTest {
                 new ArrayList<AutosleepConfigControllerResponse>();
         fakeValidatedResponse.add(fakeResponseJson);
 
-        orgInfo = null;
         ResponseEntity<ArrayList<AutosleepConfigControllerResponse>> fakeValidatedRes = new ResponseEntity
                 <ArrayList<AutosleepConfigControllerResponse>>(fakeValidatedResponse,HttpStatus.BAD_REQUEST);
 
@@ -214,49 +193,29 @@ public class AutosleepConfigControllerTest {
         assertEquals("enrolledOrganizationCreate",
                 autosleepConfigController.enrollOrganization(fakeRequest,fakeOrgID), fakeValidatedRes);
     }
-
 
     @Test
     public void test_enrollOrganization_inValidParameters() throws CloudFoundryException {
 
         fakeRequest = new AutosleepConfigControllerRequest();
-        Boolean fakeFlag = true;
-        orgInfo = null; 
+        orgInfo = null;
 
-        fakeRequest.setOrganizationId(fakeOrgID);
         AutosleepConfigControllerResponse fakeResponseJson = new AutosleepConfigControllerResponse();
-        fakeResponseJson.setParameter("OrganizationId");
-        fakeResponseJson.setValue("fakeORgID");
-        ArrayList<AutosleepConfigControllerResponse> fakeValidatedResponse = 
-                new ArrayList<AutosleepConfigControllerResponse>();
-        fakeValidatedResponse.add(fakeResponseJson);
 
         fakeRequest.setIdleDuration("fake time");
         fakeResponseJson.setParameter("idle-duration");
+        fakeResponseJson.setValue(null);
         fakeResponseJson.setError(Config.ServiceInstanceParameters.IDLE_DURATION
                 + " param badly formatted (ISO-8601). Example: \"PT15M\" for 15mn");
-        fakeValidatedResponse.add(fakeResponseJson);    
 
-        when(fakeUtils.validateRequestBody(fakeRequest)).thenReturn(fakeValidatedResponse);
+        when(fakeUtils.validateRequestBody(fakeRequest)).thenReturn(fakeResponseJson);
+
         assertEquals("validateRequest",fakeUtils.validateRequestBody(fakeRequest),
-                fakeValidatedResponse);
-
-        ArrayList<AutosleepConfigControllerResponse> fakeRemoveParams = 
+                fakeResponseJson);
+        ArrayList<AutosleepConfigControllerResponse> fakeValidatedResponse = 
                 new ArrayList<AutosleepConfigControllerResponse>();
-        for (AutosleepConfigControllerResponse item:fakeValidatedResponse) {
-            if (item.getError() != null) {
-                fakeFlag = false;
-            } else {
-                fakeRemoveParams.add(item);
-            }
-        }
-
-        assertEquals("InvalidInput",fakeFlag,false);
-        orgInfo = null; 
-
-        for (AutosleepConfigControllerResponse item:fakeRemoveParams) {
-            fakeValidatedResponse.remove(item);
-        }
+        fakeValidatedResponse.add(fakeResponseJson);   
+        assertEquals("InvalidInput",fakeResponseJson.getValue(),null);
 
         ResponseEntity<ArrayList<AutosleepConfigControllerResponse>> fakeValidatedRes = new ResponseEntity
                 <ArrayList<AutosleepConfigControllerResponse>>(fakeValidatedResponse,HttpStatus.BAD_REQUEST);
@@ -264,25 +223,5 @@ public class AutosleepConfigControllerTest {
         when(autosleepConfigController.enrollOrganization(fakeRequest,fakeOrgID)).thenReturn(fakeValidatedRes);
         assertEquals("enrolledOrganizationCreate",
                 autosleepConfigController.enrollOrganization(fakeRequest,fakeOrgID), fakeValidatedRes);
-    }
-
-    @Test
-    public void test_populateOrgObj() {
-        fakeRequest = new AutosleepConfigControllerRequest();
-
-        fakeRequest.setOrganizationId(fakeOrgID);
-        fakeRequest.setIdleDuration("PT1S");
-
-        orgInfo = EnrolledOrganizationConfig.builder()
-                .organizationId(fakeRequest.getOrganizationId())
-                .idleDuration(fakeRequest.getIdleDuration())
-                .build();
-        orgInfo.setOrganizationId(fakeRequest.getOrganizationId());
-        orgInfo.setIdleDuration(fakeRequest.getOrganizationId());
-
-        when(autosleepConfigController.populateOrgObj(fakeRequest, orgInfo)).thenReturn(orgInfo);
-        assertEquals("enrolledOrganizationPopulateOrgObj",
-                autosleepConfigController.populateOrgObj(fakeRequest,orgInfo), orgInfo);       
-
     }
 }

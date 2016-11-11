@@ -1,7 +1,6 @@
 package org.cloudfoundry.autosleep.util;
 
 import java.time.Duration;
-import java.util.ArrayList;
 
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.ui.servicebroker.service.InvalidParameterException;
@@ -15,27 +14,24 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class AutosleepConfigControllerUtils {
 
-    public ArrayList<AutosleepConfigControllerResponse> validateRequestBody(AutosleepConfigControllerRequest request) {
+    public AutosleepConfigControllerResponse validateRequestBody(AutosleepConfigControllerRequest request) {
 
         log.info("validating Request Body");
-        AutosleepConfigControllerResponse responseJson = new AutosleepConfigControllerResponse();
-        ArrayList<AutosleepConfigControllerResponse> validatedRequest = 
-                new ArrayList<AutosleepConfigControllerResponse>();
+        AutosleepConfigControllerResponse validatedParameter = 
+                new AutosleepConfigControllerResponse();
         ParameterReaderFactory factory = new ParameterReaderFactory();
-
         if (request.getIdleDuration() != null) {
-            responseJson.setParameter("idle-duration"); 
+            validatedParameter.setParameter("idle-duration"); 
             ParameterReader<Duration> durationReader = factory.buildIdleDurationReader();
             try {
                 durationReader.readParameter(request.getIdleDuration(), false);
-                responseJson.setValue(request.getIdleDuration());                        
+                validatedParameter.setValue(request.getIdleDuration());                        
             } catch (InvalidParameterException i) {
-                responseJson.setError(Config.ServiceInstanceParameters.IDLE_DURATION
+                validatedParameter.setError(Config.ServiceInstanceParameters.IDLE_DURATION
                         + " param badly formatted (ISO-8601). Example: \"PT15M\" for 15mn");
-            }
-            validatedRequest.add(responseJson);  
-        }  
-        return validatedRequest;
+            }  
+        }          
+        return validatedParameter;
     }
 
 }

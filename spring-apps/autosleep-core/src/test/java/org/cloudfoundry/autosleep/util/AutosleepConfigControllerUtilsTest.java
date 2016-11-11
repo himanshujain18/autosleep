@@ -3,9 +3,6 @@ package org.cloudfoundry.autosleep.util;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
-
-import java.util.ArrayList;
-
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryException;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
 import org.cloudfoundry.autosleep.config.Config;
@@ -39,12 +36,9 @@ public class AutosleepConfigControllerUtilsTest {
         fakeResponseJson.setParameter("idle-duration");
         fakeResponseJson.setError(Config.ServiceInstanceParameters.IDLE_DURATION
                 + " param badly formatted (ISO-8601). Example: \"PT15M\" for 15mn");
-        ArrayList<AutosleepConfigControllerResponse> fakeValidatedResponse = 
-                new ArrayList<AutosleepConfigControllerResponse>();
-        fakeValidatedResponse.add(fakeResponseJson);    
-
-        when(utils.validateRequestBody(fakeRequest)).thenReturn(fakeValidatedResponse);
-        assertEquals("validateRequest",utils.validateRequestBody(fakeRequest), fakeValidatedResponse);
+    
+        when(utils.validateRequestBody(fakeRequest)).thenReturn(fakeResponseJson);
+        assertEquals("validateRequest",utils.validateRequestBody(fakeRequest), fakeResponseJson);
 
     }
 
@@ -57,13 +51,9 @@ public class AutosleepConfigControllerUtilsTest {
         fakeRequest.setIdleDuration("PT1M");
         fakeResponseJson.setParameter("idle-duration");
         fakeResponseJson.setValue(fakeRequest.getIdleDuration());
-        ArrayList<AutosleepConfigControllerResponse> fakeValidatedResponse = 
-                new ArrayList<AutosleepConfigControllerResponse>();
-        fakeValidatedResponse.add(fakeResponseJson);
-
-        when(utils.validateRequestBody(fakeRequest)).thenReturn(fakeValidatedResponse);
-        assertEquals("validateRequest",utils.validateRequestBody(fakeRequest), fakeValidatedResponse);
+     
+        when(utils.validateRequestBody(fakeRequest)).thenReturn(fakeResponseJson);
+        assertEquals("validateRequest",utils.validateRequestBody(fakeRequest), fakeResponseJson);
 
     }
-
 }

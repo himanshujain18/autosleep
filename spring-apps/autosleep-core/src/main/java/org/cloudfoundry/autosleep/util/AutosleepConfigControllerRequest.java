@@ -18,9 +18,6 @@ import lombok.ToString;
 @ToString
 public class AutosleepConfigControllerRequest {
 
-    @JsonProperty
-    private String organizationId;
-
     @JsonProperty(value = "idle-duration")
     private String idleDuration;
 

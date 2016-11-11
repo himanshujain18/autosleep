@@ -36,7 +36,7 @@ public class AutosleepConfigController {
     private EnrolledOrganizationConfigRepository orgRepository;
 
     @Autowired
-    AutosleepConfigControllerUtils utils;
+    private AutosleepConfigControllerUtils utils;
 
     @Autowired 
     private CloudFoundryApi cfApi;
@@ -50,35 +50,31 @@ public class AutosleepConfigController {
             String organizationId) throws CloudFoundryException {
 
         EnrolledOrganizationConfig orgInfo = EnrolledOrganizationConfig.builder().build();
-        request.setOrganizationId(organizationId);
         HttpStatus status = null;
         HttpHeaders responseHeaders = null;
-        Boolean flag = true;
         log.debug("enrollOrganization - " + organizationId);
         ArrayList<AutosleepConfigControllerResponse> validatedRequest = 
                 new ArrayList<AutosleepConfigControllerResponse>();
         AutosleepConfigControllerResponse responseJson = new AutosleepConfigControllerResponse();
+
         try {
-            responseJson.setParameter("organizationId");
             GetOrganizationResponse getOrgResponse = 
-                    cfApi.getOrganizationDetails(request.getOrganizationId());            
+                    cfApi.getOrganizationDetails(organizationId);            
             if (getOrgResponse != null) {
-                validatedRequest = utils.validateRequestBody(request);
-                responseJson.setValue(request.getOrganizationId()); 
-                responseJson.setError(null);
-                validatedRequest.add(0, responseJson);
-                ArrayList<AutosleepConfigControllerResponse> removeParams = 
-                        new ArrayList<AutosleepConfigControllerResponse>();
-                for (AutosleepConfigControllerResponse item:validatedRequest) {
-                    if (item.getError() != null) {
-                        flag = false;
-                    } else {
-                        removeParams.add(item);
-                    }
-                }              
-                if (flag) {
-                    EnrolledOrganizationConfig existingOrg  = orgRepository.findOne(organizationId);    
-                    orgInfo = populateOrgObj(request,orgInfo);
+                if (request.getIdleDuration() != null) {
+                    responseJson = utils.validateRequestBody(request);
+                    validatedRequest.add(responseJson);
+                }
+                if (responseJson.getError() == null) {
+                    responseJson = null;
+                    responseJson = new AutosleepConfigControllerResponse();
+                    responseJson.setParameter("organizationId");
+                    responseJson.setValue(organizationId); 
+                    responseJson.setError(null);
+                    validatedRequest.add(0, responseJson);
+                    orgInfo.setOrganizationId(organizationId);
+                    orgInfo.setIdleDuration(request.getIdleDuration()); 
+                    EnrolledOrganizationConfig existingOrg  = orgRepository.findOne(organizationId);
                     orgRepository.save(orgInfo);                         
                     if (existingOrg == null) { 
                         responseHeaders = new HttpHeaders();
@@ -91,16 +87,14 @@ public class AutosleepConfigController {
                     }
                 } else {
                     status = HttpStatus.BAD_REQUEST; 
-                    log.error("Bad Request:Invalid Parameters");    
-                    for (AutosleepConfigControllerResponse item:removeParams) {
-                        validatedRequest.remove(item);
-                    }            
+                    log.error("Bad Request:Invalid Parameters");               
                 }
             }
         } catch (org.cloudfoundry.client.v2.CloudFoundryException ce) {
             if (ce.getCode() == 30003) {                
                 status = HttpStatus.BAD_REQUEST;                 
                 log.error("Bad Request:Invalid OrganizationId :" + organizationId);
+                responseJson.setParameter(organizationId); 
                 responseJson.setValue(null); 
                 responseJson.setError(ce.getMessage());
                 validatedRequest.add(0, responseJson);
@@ -109,7 +103,7 @@ public class AutosleepConfigController {
                 log.error("Internal Server Error.Please check logs for more details", ce);
                 throw new CloudFoundryException(ce);
             }
-            
+
         } catch (RuntimeException re) {       
             status = HttpStatus.INTERNAL_SERVER_ERROR;
             if (responseHeaders != null) {
@@ -156,12 +150,5 @@ public class AutosleepConfigController {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error: " + ce.getMessage());
     }
-
-    EnrolledOrganizationConfig populateOrgObj(AutosleepConfigControllerRequest request, 
-            EnrolledOrganizationConfig orgInfo) {
-        orgInfo.setOrganizationId(request.getOrganizationId());
-        orgInfo.setIdleDuration(request.getIdleDuration());
-        return orgInfo;
-    } 
 }
 
