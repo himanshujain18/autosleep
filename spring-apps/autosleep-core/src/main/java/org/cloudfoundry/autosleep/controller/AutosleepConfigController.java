@@ -66,7 +66,6 @@ public class AutosleepConfigController {
                     validatedRequest.add(responseJson);
                 }
                 if (responseJson.getError() == null) {
-                    responseJson = null;
                     responseJson = new AutosleepConfigControllerResponse();
                     responseJson.setParameter("organizationId");
                     responseJson.setValue(organizationId); 
