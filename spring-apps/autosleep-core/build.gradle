@@ -20,6 +20,7 @@ description = 'auto-sleep (service-broker, app stopper, auto enroller)'
 
 dependencies {
 
+    compile group: 'org.springframework.security', name: 'spring-security-test'
     //Groovy templates
     compile "org.codehaus.groovy:groovy-templates"
 
