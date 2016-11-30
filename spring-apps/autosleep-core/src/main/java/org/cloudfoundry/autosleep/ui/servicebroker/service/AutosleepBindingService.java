@@ -176,8 +176,11 @@ public class AutosleepBindingService implements ServiceInstanceBindingService {
                             ApplicationInfo appInfo = appRepository.findOne(appId);
                             if (appInfo != null) {
                                 appInfo.getEnrollmentState()
-                                        .updateEnrollment(serviceInstance.getId(),
-                                                !serviceInstance.isForcedAutoEnrollment());
+                                        .updateEnrollment(serviceInstance.getId(), 
+                                            !(serviceInstance.getState() 
+                                                    == Config.ServiceInstanceParameters.Enrollment.forced)
+                                            && !(serviceInstance.getState() 
+                                                    == Config.ServiceInstanceParameters.Enrollment.transitive));
                                 if (appInfo.getEnrollmentState().getStates().isEmpty()) {
                                     appRepository.delete(appId);
                                     applicationLocker.removeApplication(appId);

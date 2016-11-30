@@ -236,4 +236,16 @@ databaseChangeLog:
     - renameTable:
         oldTableName: ProxyMapEntry
         newTableName: proxy_map_entry
-                
+- changeSet:
+    id: 3
+    author: SAP
+    changes:
+    - renameColumn:
+        tableName: space_enroller_config
+        oldColumnName: forced_auto_enrollment
+        newColumnName: state
+        columnDataType: BOOLEAN
+    - modifyDataType:
+        columnName: state
+        newDataType: INT
+        tableName: space_enroller_config
