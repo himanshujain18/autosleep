@@ -13,12 +13,14 @@ import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+//import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 
 import java.util.ArrayList;
 
@@ -223,5 +225,36 @@ public class AutosleepConfigControllerTest {
         when(autosleepConfigController.enrollOrganization(fakeRequest,fakeOrgID)).thenReturn(fakeValidatedRes);
         assertEquals("enrolledOrganizationCreate",
                 autosleepConfigController.enrollOrganization(fakeRequest,fakeOrgID), fakeValidatedRes);
+    }    
+    
+    @Test
+    public void test_deleteEnrolledOrganization_when_found() throws CloudFoundryException {
+
+        orgInfo = EnrolledOrganizationConfig.builder().organizationId(fakeOrgID).build();
+
+        when(orgRepository.findOne(fakeOrgID)).thenReturn(orgInfo);
+        assertEquals("findOneAssert",orgRepository.findOne(fakeOrgID),orgInfo);
+
+        ResponseEntity<Void> response = ResponseEntity.status(HttpStatus.OK).build();
+
+        doReturn(response).when(autosleepConfigController).deleteEnrolledOrganization(fakeOrgID);
+        assertEquals("deleteEnrolledOrganization_Found",autosleepConfigController.deleteEnrolledOrganization(fakeOrgID),
+                response); 
     }
+
+    @Test
+    public void test_deleteEnrolledOrganization_when_not_found() throws CloudFoundryException {
+
+        orgInfo = null;
+
+        when(orgRepository.findOne(fakeOrgID)).thenReturn(orgInfo);
+        assertEquals("findOneAssert",orgRepository.findOne(fakeOrgID),orgInfo);
+
+        ResponseEntity<Void> response = ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        doReturn(response).when(autosleepConfigController).deleteEnrolledOrganization(fakeOrgID);
+        assertEquals("deleteEnrolledOrganization_Not_Found",
+                autosleepConfigController.deleteEnrolledOrganization(fakeOrgID), response);
+    }
+    
 }

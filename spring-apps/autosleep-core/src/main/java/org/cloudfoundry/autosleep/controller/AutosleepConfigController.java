@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.Duration;
 import java.util.ArrayList;
 
 @Slf4j
@@ -72,7 +73,7 @@ public class AutosleepConfigController {
                     responseJson.setError(null);
                     validatedRequest.add(0, responseJson);
                     orgInfo.setOrganizationId(organizationId);
-                    orgInfo.setIdleDuration(request.getIdleDuration()); 
+                    orgInfo.setIdleDuration(Duration.parse(request.getIdleDuration())); 
                     EnrolledOrganizationConfig existingOrg  = orgRepository.findOne(organizationId);
                     orgRepository.save(orgInfo);                         
                     if (existingOrg == null) { 
@@ -149,5 +150,33 @@ public class AutosleepConfigController {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error: " + ce.getMessage());
     }
+    
+    @RequestMapping(value = "enrolled-orgs/{organizationId}", 
+            method = RequestMethod.DELETE)
+    public ResponseEntity<Void>
+            deleteEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
+            throws CloudFoundryException {
+        EnrolledOrganizationConfig orgInfo = null;
+        HttpStatus status = null;
+
+        try {
+            orgInfo = orgRepository.findOne(organizationId);
+            if (orgInfo != null) {                                 
+                status = HttpStatus.OK;
+                orgRepository.delete(orgInfo);
+                log.info("Organization Id : "  + organizationId  + " is unenrolled from autosleep");
+            } else {
+                status = HttpStatus.NOT_FOUND;
+                log.error("Organization Id : "  + organizationId  + " is not enrolled with autosleep");
+            }
+        } catch (RuntimeException re) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            log.error("Internal Server Error.Please check logs for more details");
+            throw new CloudFoundryException(re);
+        }
+
+        return ResponseEntity.status(status).build();
+    }
+
 }
 

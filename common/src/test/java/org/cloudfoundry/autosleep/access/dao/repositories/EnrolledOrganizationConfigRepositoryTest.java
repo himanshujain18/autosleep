@@ -17,12 +17,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import java.time.Duration;
+
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
 public abstract class EnrolledOrganizationConfigRepositoryTest extends CrudRepositoryTest<EnrolledOrganizationConfig> {
 
-    private static final String duration = "PT2M";
+    private static final Duration duration = Duration.ofMinutes(2);
     
     @Autowired
     private EnrolledOrganizationConfigRepository enrolledOrganizationConfigRepository;
@@ -38,7 +40,8 @@ public abstract class EnrolledOrganizationConfigRepositoryTest extends CrudRepos
     @Override
     protected void compareReloaded(EnrolledOrganizationConfig original, EnrolledOrganizationConfig reloaded) {
         assertEquals(reloaded.getOrganizationId(), original.getOrganizationId());
-        assertEquals(reloaded.getIdleDuration(), original.getIdleDuration());        
+        assertEquals(reloaded.getIdleDuration(), original.getIdleDuration());  
+        System.err.println("idle duration is "+ reloaded.getIdleDuration() + " original "+original.getIdleDuration());
         assertThat("Two objects should be equal", reloaded, is(equalTo(original)));
     }
     

@@ -1,10 +1,18 @@
 package org.cloudfoundry.autosleep.access.dao.model;
 
+import java.time.Duration;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import org.cloudfoundry.autosleep.util.serializer.IntervalDeserializer;
+import org.cloudfoundry.autosleep.util.serializer.IntervalSerializer;
+
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -30,7 +38,10 @@ public class EnrolledOrganizationConfig {
     @JsonProperty
     private String organizationId;
     
+    @JsonSerialize(using = IntervalSerializer.class)
+    @JsonDeserialize(using = IntervalDeserializer.class)
+    @Column(columnDefinition = "BLOB")
     @JsonProperty(value = "idle-duration")
-    private String idleDuration;    
+    private Duration idleDuration;    
     
 }

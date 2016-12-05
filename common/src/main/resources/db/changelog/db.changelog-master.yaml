@@ -250,4 +250,4 @@ databaseChangeLog:
                 primaryKey: true
         - column:
             name: idle_duration
-            type: VARCHAR(255)              
+            type: BLOB              
