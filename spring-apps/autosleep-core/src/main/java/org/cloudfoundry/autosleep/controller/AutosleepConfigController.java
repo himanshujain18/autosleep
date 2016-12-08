@@ -118,19 +118,24 @@ public class AutosleepConfigController {
 
     @RequestMapping(value = "enrolled-orgs/{organizationId}", 
             method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EnrolledOrganizationConfig> 
+    public ResponseEntity<AutosleepConfigControllerRequest> 
             fetchEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
             throws CloudFoundryException {
+       
+        AutosleepConfigControllerRequest responseObject = null; 
         EnrolledOrganizationConfig orgInfo = null;        
         HttpStatus status = null;
 
         try {
             orgInfo = orgRepository.findOne(organizationId);
-            if (orgInfo != null) { 
+            if (orgInfo != null) {
+                responseObject = new AutosleepConfigControllerRequest();
+                responseObject.setOrganizationId(organizationId);
+                responseObject.setIdleDuration(orgInfo.getIdleDuration().toString());
                 log.info("Information for organizationId : " + organizationId + " is retrieved");                
                 status = HttpStatus.OK;
             } else {
-                status = HttpStatus.NOT_FOUND;
+                status = HttpStatus.NOT_FOUND;            
                 log.error("OrganizationId : " + organizationId + " is not enrolled with autosleep");
             }
 
@@ -140,7 +145,7 @@ public class AutosleepConfigController {
 
             throw new CloudFoundryException(re);
         }
-        return new ResponseEntity<EnrolledOrganizationConfig>(orgInfo, status);
+        return new ResponseEntity<AutosleepConfigControllerRequest>(responseObject, status);
     }
 
     @ExceptionHandler(CloudFoundryException.class)

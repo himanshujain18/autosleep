@@ -17,6 +17,9 @@ import lombok.ToString;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
 public class AutosleepConfigControllerRequest {
+    
+    @JsonProperty(value = "organizationId")
+    private String organizationId;
 
     @JsonProperty(value = "idle-duration")
     private String idleDuration;

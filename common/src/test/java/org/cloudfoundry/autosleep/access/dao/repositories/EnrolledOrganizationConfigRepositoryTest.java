@@ -41,7 +41,6 @@ public abstract class EnrolledOrganizationConfigRepositoryTest extends CrudRepos
     protected void compareReloaded(EnrolledOrganizationConfig original, EnrolledOrganizationConfig reloaded) {
         assertEquals(reloaded.getOrganizationId(), original.getOrganizationId());
         assertEquals(reloaded.getIdleDuration(), original.getIdleDuration());  
-        System.err.println("idle duration is "+ reloaded.getIdleDuration() + " original "+original.getIdleDuration());
         assertThat("Two objects should be equal", reloaded, is(equalTo(original)));
     }
     

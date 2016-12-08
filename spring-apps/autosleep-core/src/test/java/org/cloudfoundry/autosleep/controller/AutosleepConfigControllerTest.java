@@ -55,11 +55,14 @@ public class AutosleepConfigControllerTest {
 
         orgInfo = EnrolledOrganizationConfig.builder().organizationId(fakeOrgID).build();
 
+        AutosleepConfigControllerRequest fakeResponse = new AutosleepConfigControllerRequest();
         when(orgRepository.findOne(fakeOrgID)).thenReturn(orgInfo);
         assertEquals("findOneAssert",orgRepository.findOne(fakeOrgID),orgInfo);
-
-        ResponseEntity<EnrolledOrganizationConfig>  response = 
-                new ResponseEntity<EnrolledOrganizationConfig>(orgInfo,HttpStatus.OK);
+        
+        fakeResponse.setOrganizationId(fakeOrgID);
+        
+        ResponseEntity<AutosleepConfigControllerRequest>  response = 
+                new ResponseEntity<AutosleepConfigControllerRequest>(fakeResponse,HttpStatus.OK);
         when(autosleepConfigController.fetchEnrolledOrganization(fakeOrgID)).thenReturn(response);
         assertEquals("fetchEnrolledOrganization_Found",autosleepConfigController.fetchEnrolledOrganization(fakeOrgID), 
                 response); 
@@ -72,9 +75,9 @@ public class AutosleepConfigControllerTest {
 
         when(orgRepository.findOne(fakeOrgID)).thenReturn(orgInfo);
         assertEquals("findOneAssert",orgRepository.findOne(fakeOrgID),orgInfo);
-
-        ResponseEntity<EnrolledOrganizationConfig>  response = 
-                new ResponseEntity<EnrolledOrganizationConfig>(orgInfo,HttpStatus.NOT_FOUND);
+        AutosleepConfigControllerRequest fakeResponse = null;
+        ResponseEntity<AutosleepConfigControllerRequest>  response = 
+                new ResponseEntity<AutosleepConfigControllerRequest>(fakeResponse,HttpStatus.NOT_FOUND);
         when(autosleepConfigController.fetchEnrolledOrganization(fakeOrgID)).thenReturn(response);
         assertEquals("fetchEnrolledOrganization_NotFound",
                 autosleepConfigController.fetchEnrolledOrganization(fakeOrgID), response);
@@ -256,5 +259,5 @@ public class AutosleepConfigControllerTest {
         assertEquals("deleteEnrolledOrganization_Not_Found",
                 autosleepConfigController.deleteEnrolledOrganization(fakeOrgID), response);
     }
-    
+   
 }
