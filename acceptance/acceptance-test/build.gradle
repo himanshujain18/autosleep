@@ -1,0 +1,57 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'spring-boot'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url 'http://repo.spring.io/release' }
+    maven { url 'http://repo.spring.io/snapshot' }
+    maven { url 'http://repo.spring.io/milestone' }
+}
+
+
+dependencies {
+
+    compileOnly "org.projectlombok:lombok:$lombokVersion" 
+
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.4.2.RELEASE'
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+
+    compile 'org.slf4j:slf4j-api:1.7.21'
+
+    compile group: 'info.cukes', name: 'cucumber-java', version: '1.2.4'
+    compile group: 'info.cukes', name: 'cucumber-junit', version: '1.2.4'
+    compile group: 'info.cukes', name: 'cucumber-jvm-deps', version: '1.0.3'
+
+    compile 'com.github.mkolisnyk:cucumber-reports:1.0.7'
+
+    compile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.json', name: 'json', version: '20160212'
+
+    testCompile 'junit:junit:4.12'
+
+    compile group: 'org.python', name: 'jython-standalone', version: '2.5.2'
+
+    compile("io.projectreactor:reactor-core:$reactorCoreVersion")
+    compile("org.cloudfoundry:cloudfoundry-client-spring:$cfClientLibVersion")
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
