@@ -195,7 +195,7 @@ public class AutosleepServiceInstanceServiceTest {
                 .id(SERVICE_INSTANCE_ID)
                 .planId(PLAN_ID)
                 .secret("secret")
-                .forcedAutoEnrollment(true).build();
+                .state(Config.ServiceInstanceParameters.Enrollment.forced).build();
 
         when(spaceEnrollerConfigRepository.findOne(SERVICE_INSTANCE_ID)).thenReturn(existingServiceInstance);
         return existingServiceInstance;
@@ -271,7 +271,7 @@ public class AutosleepServiceInstanceServiceTest {
         assertThat(serviceInstances.size(), is(equalTo(1)));
         SpaceEnrollerConfig serviceInstance = serviceInstances.get(0);
         //and default values are applied
-        assertFalse(serviceInstance.isForcedAutoEnrollment());
+        assertFalse(serviceInstance.getState() != Config.ServiceInstanceParameters.Enrollment.standard);
         assertThat(serviceInstance.getIdleDuration(), is(equalTo(Config.DEFAULT_INACTIVITY_PERIOD)));
         assertThat(serviceInstance.isIgnoreRouteServiceError(), is(equalTo(Boolean.FALSE)));
         assertThat(serviceInstance.getSecret(), is(nullValue()));
@@ -297,7 +297,7 @@ public class AutosleepServiceInstanceServiceTest {
     public void test_delete_service_instance_fails_when_service_in_forced() throws Exception {
         //a spaceEnrollerConfig in forced enrollment
         SpaceEnrollerConfig config = BeanGenerator.createServiceInstance(SERVICE_INSTANCE_ID);
-        config.setForcedAutoEnrollment(true);
+        config.setState(Config.ServiceInstanceParameters.Enrollment.forced);
         when(spaceEnrollerConfigRepository.findOne(anyString()))
                 .thenReturn(config);
 
@@ -357,7 +357,7 @@ public class AutosleepServiceInstanceServiceTest {
         assertThat(si, is(notNullValue()));
         assertThat(serviceInstances.size(), is(equalTo(1)));
         SpaceEnrollerConfig serviceInstance = serviceInstances.get(0);
-        assertTrue(serviceInstance.isForcedAutoEnrollment());
+        assertTrue(serviceInstance.getState() == Config.ServiceInstanceParameters.Enrollment.forced);
     }
 
     @Test
@@ -533,7 +533,7 @@ public class AutosleepServiceInstanceServiceTest {
         //then service is updated
         verify(spaceEnrollerConfigRepository, times(1)).save(any(SpaceEnrollerConfig.class));
         assertThat(response, is(notNullValue()));
-        assertFalse(existingServiceInstance.isForcedAutoEnrollment());
+        assertFalse(existingServiceInstance.getState() == Config.ServiceInstanceParameters.Enrollment.forced);
     }
 
 }

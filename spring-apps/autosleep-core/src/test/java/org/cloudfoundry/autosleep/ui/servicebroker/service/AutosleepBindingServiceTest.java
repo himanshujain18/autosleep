@@ -29,6 +29,7 @@ import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.ApplicationRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.BindingRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.SpaceEnrollerConfigRepository;
+import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig;
 import org.cloudfoundry.autosleep.util.ApplicationLocker;
 import org.cloudfoundry.autosleep.util.BeanGenerator;
@@ -172,7 +173,7 @@ public class AutosleepBindingServiceTest {
         final String serviceId = "testDelBinding";
 
         //given that autoEnrollment is standard
-        when(spaceEnrollerConfig.isForcedAutoEnrollment()).thenReturn(false);
+        when(spaceEnrollerConfig.getState()).thenReturn(Config.ServiceInstanceParameters.Enrollment.standard);
         when(spaceEnrollerConfig.getId()).thenReturn(serviceId);
 
         //mock the effect of "updateEnrollment(serviceId,true);
@@ -199,7 +200,7 @@ public class AutosleepBindingServiceTest {
         final DeleteServiceInstanceBindingRequest deleteRequest = prepareDeleteAppBindingTest(serviceId, bindingId);
 
         //given that autoEnrollment is forced
-        when(spaceEnrollerConfig.isForcedAutoEnrollment()).thenReturn(true);
+        when(spaceEnrollerConfig.getState()).thenReturn(Config.ServiceInstanceParameters.Enrollment.forced);
 
         //when unbinding the app
         bindingService.deleteServiceInstanceBinding(deleteRequest);
@@ -211,6 +212,25 @@ public class AutosleepBindingServiceTest {
         verify(bindingRepository, times(1)).delete(bindingId);
     }
 
+    @Test
+    public void delete_app_binding_should_clear_app_if_autoenrollment_is_transitive() throws Exception {
+        String bindingId = "testDelBindingTransitiveAutoEnrollment";
+        String serviceId = "testDelBindingTransitiveAutoEnrollment";
+        final DeleteServiceInstanceBindingRequest deleteRequest = prepareDeleteAppBindingTest(serviceId, bindingId);
+    
+        //given that autoEnrollment is transitive
+        when(spaceEnrollerConfig.getState()).thenReturn(Config.ServiceInstanceParameters.Enrollment.transitive);
+     
+        //when unbinding the app
+        bindingService.deleteServiceInstanceBinding(deleteRequest);
+    
+        //then it should be cleared from database
+        verify(enrollmentState, times(1)).updateEnrollment(anyString(), eq(false));
+        verify(appRepo, times(1)).delete(applicationInfo.getUuid());
+        //while binding should be deleted
+        verify(bindingRepository, times(1)).delete(bindingId);
+    }
+    
     @Test
     public void delete_app_binding_should_scream_if_unable_to_list_route_bindings() throws Exception {
         String testId = "testCascadeBindingDeletion";

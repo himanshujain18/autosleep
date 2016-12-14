@@ -19,7 +19,7 @@
 
 package org.cloudfoundry.autosleep.access.dao.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty; 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AccessLevel;
@@ -31,6 +31,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+
+import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.util.serializer.IntervalDeserializer;
 import org.cloudfoundry.autosleep.util.serializer.IntervalSerializer;
 import org.cloudfoundry.autosleep.util.serializer.PatternDeserializer;
@@ -38,6 +40,8 @@ import org.cloudfoundry.autosleep.util.serializer.PatternSerializer;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 
@@ -62,7 +66,8 @@ public class SpaceEnrollerConfig {
     private Pattern excludeFromAutoEnrollment;
 
     @JsonProperty
-    private boolean forcedAutoEnrollment;
+    @Enumerated(value = EnumType.ORDINAL)
+    private Config.ServiceInstanceParameters.Enrollment state;
 
     @Id
     @JsonProperty
