@@ -75,6 +75,8 @@ public interface Config {
 
         String APPLICATIONS_SUB_PATH = "/applications/";
 
+        String CONTROLLER_BASE_PATH = "/v1";
+        
         String DASHBOARD_CONTEXT = "/dashboard";
 
         String PROXY_CONTEXT = "/proxy";
