@@ -237,7 +237,7 @@ databaseChangeLog:
         oldTableName: ProxyMapEntry
         newTableName: proxy_map_entry
 - changeSet:
-    id: 3
+    id: 4
     author: SAP
     changes:
     - renameColumn:
