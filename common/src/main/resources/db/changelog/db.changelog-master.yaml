@@ -250,4 +250,16 @@ databaseChangeLog:
                 primaryKey: true
         - column:
             name: idle_duration
-            type: BLOB              
+            type: BLOB
+    id: 4
+    author: SAP
+    changes:
+    - renameColumn:
+        tableName: space_enroller_config
+        oldColumnName: forced_auto_enrollment
+        newColumnName: state
+        columnDataType: BOOLEAN
+    - modifyDataType:
+        columnName: state
+        newDataType: INT
+        tableName: space_enroller_config

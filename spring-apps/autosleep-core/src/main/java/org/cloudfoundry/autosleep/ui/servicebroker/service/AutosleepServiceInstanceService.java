@@ -154,7 +154,7 @@ public class AutosleepServiceInstanceService implements ServiceInstanceService {
                     .idleDuration(idleDuration)
                     .ignoreRouteServiceError(ignoreRouteServiceError)
                     .excludeFromAutoEnrollment(excludeFromAutoEnrollment)
-                    .forcedAutoEnrollment(autoEnrollment == Config.ServiceInstanceParameters.Enrollment.forced)
+                    .state(autoEnrollment)
                     .secret(secret != null ? passwordEncoder.encode(secret) : null)
                     .build();
 
@@ -180,7 +180,7 @@ public class AutosleepServiceInstanceService implements ServiceInstanceService {
         log.debug("deleteServiceInstance - {}", spaceEnrollerConfigId);
         SpaceEnrollerConfig config = spaceEnrollerConfigRepository.findOne(spaceEnrollerConfigId);
         if (config != null) {
-            if (config.isForcedAutoEnrollment()) {
+            if (config.getState() == Config.ServiceInstanceParameters.Enrollment.forced) {
                 log.debug("deleteServiceInstance - {} - forced enrollment. Denied", spaceEnrollerConfigId);
                 throw new ServiceBrokerException("this autosleep service instance can't be deleted during forced "
                         + "enrollment mode. Switch back to normal enrollment mode to allow its deletion.");
@@ -262,8 +262,7 @@ public class AutosleepServiceInstanceService implements ServiceInstanceService {
                             "Provided secret does not match the one provided on creation nor the "
                                     + Config.EnvKey.SECURITY_PASSWORD + " value.");
                 }
-                spaceEnrollerConfig.setForcedAutoEnrollment(
-                        autoEnrollment == Config.ServiceInstanceParameters.Enrollment.forced);
+                spaceEnrollerConfig.setState(autoEnrollment);
                 spaceEnrollerConfigRepository.save(spaceEnrollerConfig);
             }
             return new UpdateServiceInstanceResponse().withAsync(false);
