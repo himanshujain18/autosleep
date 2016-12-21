@@ -77,10 +77,10 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                // System.out.println("************Inside OrganizationEnroller.java:: OrgNot NULL"); 
                 System.out.println("reschedule time:: " + this.rescheduleTime);             
 
-                List<SpaceEnrollerConfig> enrolledSpaces = spaceEnrollerConfigRepository.listByOrganizationId(this.organizationId);
+             //   List<SpaceEnrollerConfig> enrolledSpaces = spaceEnrollerConfigRepository.listByOrganizationId(this.organizationId);
                 //System.out.println("************Inside OrganizationEnroller.java:: Table Spaces:: "+ enrolledSpaces.size());
                // if (enrolledSpaces.size() != 0) {
-                    utils.deleteServiceInstances(enrolledSpaces);            
+             //       utils.deleteServiceInstances(enrolledSpaces);            
                // }
                 //All the existing serviceInstances deleted
                 System.out.println("************Inside OrganizationEnroller.java:: all serviceInstances deleted ");

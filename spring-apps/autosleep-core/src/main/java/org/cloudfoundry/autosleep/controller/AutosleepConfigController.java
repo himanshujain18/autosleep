@@ -53,8 +53,8 @@ public class AutosleepConfigController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<ArrayList<AutosleepConfigControllerResponse>> 
-            enrollOrganization(@RequestBody AutosleepConfigControllerRequest request, @PathVariable("organizationId") 
-            String organizationId) throws CloudFoundryException {
+    enrollOrganization(@RequestBody AutosleepConfigControllerRequest request, @PathVariable("organizationId") 
+    String organizationId) throws CloudFoundryException {
 
         EnrolledOrganizationConfig orgInfo = EnrolledOrganizationConfig.builder().build();
         HttpStatus status = null;
@@ -79,7 +79,9 @@ public class AutosleepConfigController {
                     responseJson.setError(null);
                     validatedRequest.add(0, responseJson);
                     orgInfo.setOrganizationId(organizationId);
-                    orgInfo.setIdleDuration(Duration.parse(request.getIdleDuration())); 
+                    if (request.getIdleDuration() != null) {
+                        orgInfo.setIdleDuration(Duration.parse(request.getIdleDuration())); 
+                    }
                     EnrolledOrganizationConfig existingOrg  = orgRepository.findOne(organizationId);
                     orgRepository.save(orgInfo);                         
                     if (existingOrg == null) { 
@@ -93,6 +95,7 @@ public class AutosleepConfigController {
                         utils.updateOrganization(orgInfo);
                         log.info("Updated already enrolled organization : " + organizationId);
                     }
+
                 } else {
                     status = HttpStatus.BAD_REQUEST; 
                     log.error("Bad Request:Invalid Parameters");               
@@ -127,9 +130,9 @@ public class AutosleepConfigController {
     @RequestMapping(value = "enrolled-orgs/{organizationId}", 
             method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AutosleepConfigControllerRequest> 
-            fetchEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
+    fetchEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
             throws CloudFoundryException {
-       
+
         AutosleepConfigControllerRequest responseObject = null; 
         EnrolledOrganizationConfig orgInfo = null;        
         HttpStatus status = null;
@@ -139,7 +142,9 @@ public class AutosleepConfigController {
             if (orgInfo != null) {
                 responseObject = new AutosleepConfigControllerRequest();
                 responseObject.setOrganizationId(organizationId);
-                responseObject.setIdleDuration(orgInfo.getIdleDuration().toString());
+                if(orgInfo.getIdleDuration() != null) {
+                    responseObject.setIdleDuration(orgInfo.getIdleDuration().toString());
+                }
                 log.info("Information for organizationId : " + organizationId + " is retrieved");                
                 status = HttpStatus.OK;
             } else {
@@ -163,11 +168,11 @@ public class AutosleepConfigController {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error: " + ce.getMessage());
     }
-    
+
     @RequestMapping(value = "enrolled-orgs/{organizationId}", 
             method = RequestMethod.DELETE)
     public ResponseEntity<Void>
-            deleteEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
+    deleteEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
             throws CloudFoundryException {
         EnrolledOrganizationConfig orgInfo = null;
         HttpStatus status = null;
