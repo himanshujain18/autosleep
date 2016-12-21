@@ -1,7 +1,7 @@
 
 package org.cloudfoundry.autosleep.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; 
 
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApiService;
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryException;
@@ -57,6 +57,9 @@ public class AutosleepConfigController {
             String organizationId) throws CloudFoundryException {
 
         EnrolledOrganizationConfig orgInfo = EnrolledOrganizationConfig.builder().build();
+        if (orgInfo == null) {
+            System.out.println("************** ORG INFO IS NULL");
+        }
         HttpStatus status = null;
         HttpHeaders responseHeaders = null;
         log.debug("enrollOrganization - " + organizationId);
@@ -79,7 +82,9 @@ public class AutosleepConfigController {
                     responseJson.setError(null);
                     validatedRequest.add(0, responseJson);
                     orgInfo.setOrganizationId(organizationId);
-                    orgInfo.setIdleDuration(Duration.parse(request.getIdleDuration())); 
+                    if (request.getIdleDuration() != null) {
+                        orgInfo.setIdleDuration(Duration.parse(request.getIdleDuration())); 
+                    }
                     EnrolledOrganizationConfig existingOrg  = orgRepository.findOne(organizationId);
                     orgRepository.save(orgInfo);                         
                     if (existingOrg == null) { 
@@ -139,7 +144,9 @@ public class AutosleepConfigController {
             if (orgInfo != null) {
                 responseObject = new AutosleepConfigControllerRequest();
                 responseObject.setOrganizationId(organizationId);
-                responseObject.setIdleDuration(orgInfo.getIdleDuration().toString());
+                if(orgInfo.getIdleDuration() != null) {
+                    responseObject.setIdleDuration(orgInfo.getIdleDuration().toString());
+                }
                 log.info("Information for organizationId : " + organizationId + " is retrieved");                
                 status = HttpStatus.OK;
             } else {

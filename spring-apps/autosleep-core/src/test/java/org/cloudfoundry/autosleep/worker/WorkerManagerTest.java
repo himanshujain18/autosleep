@@ -23,9 +23,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.Binding;
+import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.ApplicationRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.BindingRepository;
+import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationConfigRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.SpaceEnrollerConfigRepository;
 import org.cloudfoundry.autosleep.util.ApplicationLocker;
 import org.cloudfoundry.autosleep.util.BeanGenerator;
@@ -89,6 +91,9 @@ public class WorkerManagerTest {
 
     @Mock
     private SpaceEnrollerConfigRepository mockServiceRepo;
+    
+    @Mock
+    private EnrolledOrganizationConfigRepository mockOrgRepo;
 
     private List<UUID> remoteApplications = Arrays.asList(UUID.randomUUID(), UUID.randomUUID());
 
@@ -114,6 +119,11 @@ public class WorkerManagerTest {
 
         when(mockBindingRepo.findAllByResourceType(Application)).thenReturn(storedBindings);
 
+        //init mock orgRepo
+        List<EnrolledOrganizationConfig> fakeList = Arrays.asList(mock(EnrolledOrganizationConfig.class));
+        
+        when(mockOrgRepo.findAll()).thenReturn(fakeList);
+        
         //init mock serviceRepo
         SpaceEnrollerConfig mockService = mock(SpaceEnrollerConfig.class);
         when(mockService.getIdleDuration()).thenReturn(INTERVAL);

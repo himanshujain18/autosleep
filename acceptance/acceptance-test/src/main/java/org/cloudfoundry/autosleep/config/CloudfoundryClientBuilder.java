@@ -77,8 +77,8 @@ public class CloudfoundryClientBuilder {
             
             try {
 
-                log.debug("buildClient - targetHost={}", targetApiEndpoint);
-                log.debug("buildClient - username={}", cfUsername);
+                log.info("buildClient - targetHost={}", targetApiEndpoint);
+                log.info("buildClient - username={}", cfUsername);
                 
                 SpringCloudFoundryClient client = SpringCloudFoundryClient.builder()
                         .host(targetApiEndpoint)
@@ -86,7 +86,7 @@ public class CloudfoundryClientBuilder {
                         .password(cfUserPassword)
                         .skipSslValidation(true)
                         .build();
-                
+
                 this.clientContainer = ClientContainer.builder()
                         .client(client)
                         .build();

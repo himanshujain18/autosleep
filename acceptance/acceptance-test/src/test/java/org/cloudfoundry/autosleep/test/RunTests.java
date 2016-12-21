@@ -17,15 +17,16 @@ import org.cloudfoundry.autosleep.test.RunTests.SpringProfileCucumber;
 @RunWith(SpringProfileCucumber.class)
 @ProfileValueSourceConfiguration(SystemProfileValueSource.class)
 @IfProfileValue(name = "acceptance-test", value = "true")
-@ExtendedCucumberOptions(jsonReport = "target/Organization-REST-APIs-Report.json",
+@ExtendedCucumberOptions(jsonReport = "target/Org-Enrollment-Report.json",
         detailedReport = true,
         overviewReport = true,
         outputFolder = "target",
-        reportPrefix = "Organization-REST-APIs-Report")
-@CucumberOptions(plugin = {"pretty:target/Organization-REST-APIs-pretty.txt", "html:target/cucumber",
-        "json:target/Organization-REST-APIs-Report.json", "usage:target/Organization-REST-APIs-usage.json",
-        "junit:target/Organization-REST-APIs-results.xml"},
-        features = {"src/test/java/org/cloudfoundry/autosleep/feature/OrgEnroll.feature"})
+        reportPrefix = "Org-Enrollment-Report")
+@CucumberOptions(plugin = {"pretty:target/Org-Enrollment-pretty.txt", "html:target/cucumber",
+        "json:target/Org-Enrollment-Report.json", "usage:target/Org-Enrollment-usage.json",
+        "junit:target/Org-Enrollment-results.xml"},
+        features = {"src/test/java/org/cloudfoundry/autosleep/feature/OrgEnroll.feature",
+        "src/test/java/org/cloudfoundry/autosleep/feature/OrganizationDeRegister.feature"})
 public class RunTests {
     
     public static class SpringProfileCucumber extends ExtendedCucumber {
@@ -33,7 +34,7 @@ public class RunTests {
             super(clazz);
         }
         
-        public void run(RunNotifier notifier) {   
+        public void run(RunNotifier notifier) {
             if (!ProfileValueUtils.isTestEnabledInThisEnvironment(getTestClass().getJavaClass())) {
                 notifier.fireTestIgnored(getDescription());
                 return;
@@ -41,5 +42,4 @@ public class RunTests {
             super.run(notifier);
         }
     }
-    
 }
