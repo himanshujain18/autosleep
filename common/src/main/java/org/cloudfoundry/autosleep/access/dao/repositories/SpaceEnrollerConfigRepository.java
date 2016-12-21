@@ -25,7 +25,9 @@ import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public interface SpaceEnrollerConfigRepository extends JpaRepository<SpaceEnrollerConfig, String> {
     
     //@Query("select s.id from SpaceEnrollerConfig s where s.organizationId NOT IN (:ids)")

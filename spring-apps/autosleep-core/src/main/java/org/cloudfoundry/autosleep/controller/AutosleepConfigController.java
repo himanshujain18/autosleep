@@ -1,7 +1,7 @@
 
 package org.cloudfoundry.autosleep.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; 
 
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApiService;
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryException;
@@ -57,6 +57,9 @@ public class AutosleepConfigController {
     String organizationId) throws CloudFoundryException {
 
         EnrolledOrganizationConfig orgInfo = EnrolledOrganizationConfig.builder().build();
+        if (orgInfo == null) {
+            System.out.println("************** ORG INFO IS NULL");
+        }
         HttpStatus status = null;
         HttpHeaders responseHeaders = null;
         log.debug("enrollOrganization - " + organizationId);

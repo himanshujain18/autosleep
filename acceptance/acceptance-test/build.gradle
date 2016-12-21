@@ -24,12 +24,12 @@ repositories {
 
 dependencies {
 
-    compileOnly "org.projectlombok:lombok:$lombokVersion" 
-
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    
     compile('org.springframework.boot:spring-boot-starter-web')
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.4.2.RELEASE'
-    testCompile('org.springframework.boot:spring-boot-starter-test')
-
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+    
     compile 'org.slf4j:slf4j-api:1.7.21'
 
     compile group: 'info.cukes', name: 'cucumber-java', version: '1.2.4'
@@ -47,11 +47,17 @@ dependencies {
 
     compile("io.projectreactor:reactor-core:$reactorCoreVersion")
     compile("org.cloudfoundry:cloudfoundry-client-spring:$cfClientLibVersion")
+    
+    compile("org.springframework.cloud:spring-cloud-cloudfoundry-service-broker:${springCloudServiceBrokerVersion}")
+    testCompile(group: "org.springframework.cloud",
+            name: "spring-cloud-cloudfoundry-service-broker",
+            version: "${springCloudServiceBrokerVersion}",
+            classifier: "tests")
 }
 
 test {
     testLogging {
-        events "passed", "skipped", "failed"
+        events "passed", "failed"
+        //testLogging.showStandardStreams = true
     }
 }
-
