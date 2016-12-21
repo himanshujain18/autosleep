@@ -251,6 +251,7 @@ databaseChangeLog:
         - column:
             name: idle_duration
             type: BLOB
+- changeSet:
     id: 4
     author: SAP
     changes:

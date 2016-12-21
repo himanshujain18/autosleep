@@ -21,7 +21,9 @@ package org.cloudfoundry.autosleep.access.cloudfoundry;
 
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationActivity;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
+import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -31,13 +33,23 @@ public interface CloudFoundryApiService {
     void bindApplications(String serviceInstanceId, List<ApplicationIdentity> application) throws CloudFoundryException;
 
     void bindRoutes(String serviceInstanceId, List<String> routeIds) throws CloudFoundryException;
+   
+    void createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) throws CloudFoundryException;
 
+    void deleteServiceInstance(String serviceInstanceId) throws CloudFoundryException;
+    
+    void deleteServiceInstanceBinding(String bindingId) throws CloudFoundryException;
+    
     ApplicationActivity getApplicationActivity(String appUid) throws CloudFoundryException;
 
     String getApplicationState(String applicationUuid) throws CloudFoundryException;
 
     String getHost(String routeId) throws CloudFoundryException;
 
+    String getServiceId() throws CloudFoundryException;
+    
+    String getServicePlanId(String serviceId) throws CloudFoundryException;
+    
     GetOrganizationResponse getOrganizationDetails(String organizationId) throws CloudFoundryException; 
 
     boolean isAppRunning(String appUid) throws CloudFoundryException;
@@ -48,6 +60,8 @@ public interface CloudFoundryApiService {
     List<String/**ids**/> listApplicationRoutes(String applicationUuid) throws CloudFoundryException;
 
     List<String/**ids**/> listRouteApplications(String routeUuid) throws CloudFoundryException;
+    
+    ListOrganizationSpacesResponse listOrganizationSpaces(String organizationId) throws CloudFoundryException;
 
     boolean startApplication(String applicationUuid) throws CloudFoundryException;
 

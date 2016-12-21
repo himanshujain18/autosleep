@@ -3,10 +3,12 @@ package org.cloudfoundry.autosleep.controller;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApi;
+import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApiService;
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryException;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
+import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationConfigRepository;
+import org.cloudfoundry.autosleep.access.dao.repositories.SpaceEnrollerConfigRepository;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.util.AutosleepConfigControllerRequest;
 import org.cloudfoundry.autosleep.util.AutosleepConfigControllerResponse;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Controller
@@ -37,10 +40,13 @@ public class AutosleepConfigController {
     private EnrolledOrganizationConfigRepository orgRepository;
 
     @Autowired
+    private SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
+
+    @Autowired
     private AutosleepConfigControllerUtils utils;
 
     @Autowired 
-    private CloudFoundryApi cfApi;
+    private CloudFoundryApiService cfApi;
 
     @RequestMapping(value = "enrolled-orgs/{organizationId}", 
             method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -79,10 +85,12 @@ public class AutosleepConfigController {
                     if (existingOrg == null) { 
                         responseHeaders = new HttpHeaders();
                         responseHeaders.add("Location", "/v1/enrolled-orgs/" + organizationId);
+                        utils.registerOrganization(orgInfo);
                         log.info("Organization " + organizationId + " is enrolled with Autosleep");
                         status = HttpStatus.CREATED;
                     } else {
                         status = HttpStatus.OK;
+                        utils.updateOrganization(orgInfo);
                         log.info("Updated already enrolled organization : " + organizationId);
                     }
                 } else {
@@ -169,6 +177,13 @@ public class AutosleepConfigController {
             if (orgInfo != null) {                                 
                 status = HttpStatus.OK;
                 orgRepository.delete(orgInfo);
+                System.out.println("*************before Query*****");
+                List<SpaceEnrollerConfig> serviceInstances = spaceEnrollerConfigRepository.listByOrganizationId(organizationId);
+                System.out.println("*************after Query*****");
+                for(SpaceEnrollerConfig item:serviceInstances) {
+                    System.out.println("*************service Instance are ::"+item.getId());
+                }
+                utils.deleteServiceInstances(serviceInstances);
                 log.info("Organization Id : "  + organizationId  + " is unenrolled from autosleep");
             } else {
                 status = HttpStatus.NOT_FOUND;

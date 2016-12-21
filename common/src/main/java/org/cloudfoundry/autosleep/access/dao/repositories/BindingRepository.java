@@ -38,4 +38,10 @@ public interface BindingRepository extends JpaRepository<Binding, String> {
     @Query("select b from Binding b where b.resourceId in (:ids) and b.resourceType = :resType")
     List<Binding> findByResourceIdAndType(@Param("ids") List<String> ids, @Param("resType") ResourceType resType);
 
+    //@Query("select b.serviceBindingId from Binding b where b.serviceInstanceId in (:ids)")
+    //List<String> findByServiceInstanceIds(@Param("ids") List<String> ids);
+    
+    @Query("select b from Binding b where b.serviceInstanceId = :id")
+    List<Binding> findByServiceInstanceId(@Param("id") String id);
+
 }
