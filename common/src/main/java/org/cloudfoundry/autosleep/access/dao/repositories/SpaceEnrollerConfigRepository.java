@@ -19,9 +19,22 @@
 
 package org.cloudfoundry.autosleep.access.dao.repositories;
 
+import java.util.List;
+
 import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface SpaceEnrollerConfigRepository extends JpaRepository<SpaceEnrollerConfig, String> {
-
+    
+    //@Query("select s.id from SpaceEnrollerConfig s where s.organizationId NOT IN (:ids)")
+    //List<String> deRegisteredOrganizationServiceInstances(@Param("ids") List<String> ids);
+    
+    @Query("select s from SpaceEnrollerConfig s where s.organizationId NOT IN (:ids)")
+    List<SpaceEnrollerConfig> deRegisteredOrganizationServiceInstances(@Param("ids") List<String> ids);
+    
+    @Query("select s from SpaceEnrollerConfig s where s.organizationId = :id")
+    List<SpaceEnrollerConfig> listByOrganizationId(@Param("id") String id);
+    
 }

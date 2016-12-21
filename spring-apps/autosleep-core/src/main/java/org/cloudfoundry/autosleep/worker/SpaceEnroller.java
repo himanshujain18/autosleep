@@ -73,6 +73,8 @@ class SpaceEnroller extends AbstractPeriodicTask {
 
     @Override
     public void run() {
+        
+        System.out.println("RUN SPACE");
         SpaceEnrollerConfig serviceInstance = spaceEnrollerConfigRepository.findOne(spaceEnrollerConfigId);
         if (serviceInstance != null) {
             try {
@@ -88,11 +90,13 @@ class SpaceEnroller extends AbstractPeriodicTask {
                 List<ApplicationIdentity> applicationIdentities = cloudFoundryApi
                         .listAliveApplications(serviceInstance.getSpaceId(),
                                 serviceInstance.getExcludeFromAutoEnrollment());
+                System.out.println("RUN SPACE:: applicationIdentities");
                 List<ApplicationIdentity> newApplications = applicationIdentities.stream()
                         .filter(application ->
                                 deployment == null || !deployment.getApplicationId().equals(application.getGuid()))
                         .filter(application -> !(watchedOrIgnoredApplications.contains(application.getGuid())))
                         .collect(Collectors.toList());
+                System.out.println("RUN SPACE : newApplications ");
                 if (!newApplications.isEmpty()) {
                     log.debug("{} - new applications", newApplications.size());
                     cloudFoundryApi.bindApplications(serviceInstance.getId(), newApplications);

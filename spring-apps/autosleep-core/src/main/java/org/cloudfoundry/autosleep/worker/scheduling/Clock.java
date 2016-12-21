@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -65,8 +66,23 @@ public class Clock {
      */
     public void scheduleTask(String id, Duration duration, Runnable action) {
         log.debug("scheduleTask - task {}", id);
+        
+      //Required to cancel the already set time for this thread as per earlier Duraiton
+        ScheduledFuture<?> oldHandle = tasks.get(id);        
+        if(oldHandle != null) {
+            oldHandle.cancel(true);
+        }
+        
         ScheduledFuture<?> handle = timeManager.schedule(action, duration);
         tasks.put(id, handle);
+        
+        //For TESTING
+        Iterator<Map.Entry<String/*taskId*/, ScheduledFuture<?>>> entries = tasks.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<String/*taskId*/, ScheduledFuture<?>> entry = entries.next();
+            System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
+        }
+        
     }
 
 }

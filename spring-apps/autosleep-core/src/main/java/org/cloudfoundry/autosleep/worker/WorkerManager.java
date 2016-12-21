@@ -23,11 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.autosleep.access.dao.repositories.ProxyMapEntryRepository;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig;
+import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.ApplicationRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.BindingRepository;
+import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationConfigRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.SpaceEnrollerConfigRepository;
 import org.cloudfoundry.autosleep.util.ApplicationLocker;
+import org.cloudfoundry.autosleep.util.AutosleepConfigControllerUtils;
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApiService;
 import org.cloudfoundry.autosleep.worker.scheduling.Clock;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +38,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.cloudfoundry.autosleep.access.dao.model.Binding.ResourceType.Application;
 
@@ -61,15 +68,44 @@ public class WorkerManager implements WorkerManagerService {
     private DeployedApplicationConfig.Deployment deployment;
 
     @Autowired
+    private EnrolledOrganizationConfigRepository orgRepository;
+
+    @Autowired
     private SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
 
     @Autowired
     private ProxyMapEntryRepository proxyMapEntryRepository;
 
+    @Autowired
+    private AutosleepConfigControllerUtils utils;
+
+    private Map<String,OrganizationEnroller> organizationObjects;
+
     @PostConstruct
     public void init() {
+        System.out.println("************Inside WorkerManager.java:init*********"+Thread.currentThread().getName());
+        
+       // List<SpaceEnrollerConfig> enrolledSpaces = spaceEnrollerConfigRepository.listByOrganizationId("7c16c246-bef6-448e-af0d-a2cffc9c2a2a");
+       // System.out.println("************Inside OrganizationEnroller.java:: Table Spaces:: "+ enrolledSpaces.size());
+
+        log.debug("Initializer watchers for every organization already enrolled (except if handle by another" 
+                + "instance of autosleep)");
+        this.organizationObjects = new HashMap<String,OrganizationEnroller>();
+
+        List<EnrolledOrganizationConfig> enrolledOrgs = orgRepository.findAll();        
+        // List<String> enrolledOrgIDs = new ArrayList<String>();
+
+        if (enrolledOrgs != null) {
+            for (EnrolledOrganizationConfig item:enrolledOrgs) {
+                //      enrolledOrgIDs.add(item.getOrganizationId());
+                registerOrganizationEnroller(item);                   
+            }            
+        }
+
+
         log.debug("Initializer watchers for every app already enrolled (except if handle by another instance of "
                 + "autosleep)");
+
         bindingRepository.findAllByResourceType(Application).forEach(applicationBinding -> {
             SpaceEnrollerConfig spaceEnrollerConfig =
                     spaceEnrollerConfigRepository.findOne(applicationBinding.getServiceInstanceId());
@@ -78,8 +114,40 @@ public class WorkerManager implements WorkerManagerService {
                         applicationBinding.getResourceId(),
                         applicationBinding.getServiceBindingId());
             }
-        });
+        });       
+
         spaceEnrollerConfigRepository.findAll().forEach(this::registerSpaceEnroller);
+
+        organizationDeRegister(orgRepository);  //check the sequence of call
+        System.out.println("********** FIND BY ORG");
+
+    }
+
+    @Override
+    public void registerOrganizationEnroller(EnrolledOrganizationConfig orgInfo) {
+        OrganizationEnroller orgEnroller = OrganizationEnroller.builder()
+                .clock(clock)
+                .period((orgInfo.getIdleDuration() != null )                                  
+                        ? orgInfo.getIdleDuration() : Config.DEFAULT_INACTIVITY_PERIOD)
+                .organizationId(orgInfo.getOrganizationId())
+                .cloudFoundryApi(cloudFoundryApi)
+                .enrolledOrganizationConfig(orgInfo)
+                .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)
+                .utils(utils)
+                .build();
+        setOrganizationObjects(orgInfo.getOrganizationId(), orgEnroller);
+        orgEnroller.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK); 
+
+    }
+
+    @Override
+    public Map<String,OrganizationEnroller> getOrganizationObjects() {
+        return this.organizationObjects;
+    }
+
+    @Override
+    public void setOrganizationObjects(String id, OrganizationEnroller orgEnroller) { 
+        this.organizationObjects.put(id, orgEnroller);
     }
 
     @Override
@@ -104,6 +172,8 @@ public class WorkerManager implements WorkerManagerService {
 
     @Override
     public void registerSpaceEnroller(SpaceEnrollerConfig service) {
+        System.out.println("Register thread for new service Instance");
+
         SpaceEnroller spaceEnroller = SpaceEnroller.builder()
                 .clock(clock)
                 .period(service.getIdleDuration())
@@ -114,6 +184,19 @@ public class WorkerManager implements WorkerManagerService {
                 .deployment(deployment)
                 .build();
         spaceEnroller.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);
+    }
+
+    @Override
+    public void organizationDeRegister(EnrolledOrganizationConfigRepository orgRepository) {
+        OrganizationDeRegister orgDeregister = OrganizationDeRegister.builder()
+                .clock(clock)
+                .period(Config.DEFAULT_INACTIVITY_PERIOD)
+                .orgRepository(orgRepository)                
+                .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)
+                .utils(utils)
+                .build();
+
+        orgDeregister.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);   //TODO: Decide delay time to start this thread 
     }
 
 }
