@@ -74,6 +74,8 @@ public class CloudfoundryClientBuilder {
             String targetApiEndpoint = prop.getProperty("targetApiEndpoint");
             String cfUsername = prop.getProperty("email");
             String cfUserPassword = prop.getProperty("password");
+            String cfClientId = prop.getProperty("clientId");
+            String cfClientSecret = prop.getProperty("clientSecret");
             
             try {
 
@@ -85,6 +87,8 @@ public class CloudfoundryClientBuilder {
                         .username(cfUsername)
                         .password(cfUserPassword)
                         .skipSslValidation(true)
+                        .clientId(cfClientId)
+                        .clientSecret(cfClientSecret)
                         .build();
 
                 this.clientContainer = ClientContainer.builder()
