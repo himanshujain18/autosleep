@@ -29,14 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
 public interface SpaceEnrollerConfigRepository extends JpaRepository<SpaceEnrollerConfig, String> {
-    
-    //@Query("select s.id from SpaceEnrollerConfig s where s.organizationId NOT IN (:ids)")
-    //List<String> deRegisteredOrganizationServiceInstances(@Param("ids") List<String> ids);
-    
-    @Query("select s from SpaceEnrollerConfig s where s.organizationId NOT IN (:ids)")
-    List<SpaceEnrollerConfig> deRegisteredOrganizationServiceInstances(@Param("ids") List<String> ids);
-    
+ 
     @Query("select s from SpaceEnrollerConfig s where s.organizationId = :id")
     List<SpaceEnrollerConfig> listByOrganizationId(@Param("id") String id);
+    
+    @Query("select s from SpaceEnrollerConfig s where s.id IN (:ids)")
+    List<SpaceEnrollerConfig> listByIds(@Param("ids") List<String> ids);
     
 }

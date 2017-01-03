@@ -11,15 +11,19 @@ import java.util.Map;
 
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApiService;
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryException;
+import org.cloudfoundry.autosleep.access.dao.model.AutoServiceInstance;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
+import org.cloudfoundry.autosleep.access.dao.repositories.AutoServiceInstanceRepository;
+import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationConfigRepository;
 import org.cloudfoundry.autosleep.access.dao.repositories.SpaceEnrollerConfigRepository;
 import org.cloudfoundry.autosleep.util.AutosleepConfigControllerUtils;
 import org.cloudfoundry.autosleep.worker.scheduling.AbstractPeriodicTask;
 import org.cloudfoundry.autosleep.worker.scheduling.Clock;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
 import org.cloudfoundry.client.v2.spaces.SpaceResource;
 
 import lombok.Builder;
@@ -34,15 +38,19 @@ public
 class OrganizationEnroller extends AbstractPeriodicTask {   
 
     private final String organizationId;
-    
+
     private final CloudFoundryApiService cloudFoundryApi;    
 
     private AutosleepConfigControllerUtils utils;
 
     private final SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
-    
+
+    private AutoServiceInstanceRepository autoServiceInstanceRepository;
+
+    private EnrolledOrganizationConfigRepository orgRepository;
+
     private EnrolledOrganizationConfig enrolledOrganizationConfig;
-    
+
     private Duration rescheduleTime;
 
     @Builder
@@ -52,6 +60,8 @@ class OrganizationEnroller extends AbstractPeriodicTask {
             CloudFoundryApiService cloudFoundryApi,
             AutosleepConfigControllerUtils utils,
             SpaceEnrollerConfigRepository spaceEnrollerConfigRepository,
+            EnrolledOrganizationConfigRepository orgRepository,
+            AutoServiceInstanceRepository autoServiceInstanceRepository,
             EnrolledOrganizationConfig enrolledOrganizationConfig) {
         super(clock, period);
         this.organizationId = organizationId;
@@ -59,6 +69,8 @@ class OrganizationEnroller extends AbstractPeriodicTask {
         this.enrolledOrganizationConfig = enrolledOrganizationConfig;
         this.rescheduleTime = period;
         this.spaceEnrollerConfigRepository = spaceEnrollerConfigRepository;
+        this.orgRepository = orgRepository;
+        this.autoServiceInstanceRepository = autoServiceInstanceRepository;
         this.utils = utils;
     }
 
@@ -68,123 +80,197 @@ class OrganizationEnroller extends AbstractPeriodicTask {
     }
 
     @Override
-    public void run() {   
-        System.out.println("*********** Inside RUN");
+    public void run() {
+
         try {            
             GetOrganizationResponse getOrgResponse = 
                     cloudFoundryApi.getOrganizationDetails(organizationId);            
             if (getOrgResponse != null) {
-               // System.out.println("************Inside OrganizationEnroller.java:: OrgNot NULL"); 
-                System.out.println("reschedule time:: " + this.rescheduleTime);             
-
-             //   List<SpaceEnrollerConfig> enrolledSpaces = spaceEnrollerConfigRepository.listByOrganizationId(this.organizationId);
-                //System.out.println("************Inside OrganizationEnroller.java:: Table Spaces:: "+ enrolledSpaces.size());
-               // if (enrolledSpaces.size() != 0) {
-             //       utils.deleteServiceInstances(enrolledSpaces);            
-               // }
-                //All the existing serviceInstances deleted
-                System.out.println("************Inside OrganizationEnroller.java:: all serviceInstances deleted ");
-
-                ListOrganizationSpacesResponse orgSpaceResponse = cloudFoundryApi
-                        .listOrganizationSpaces(this.organizationId); //all spaces in that org from cf
-
-                List<SpaceResource> orgSpace = orgSpaceResponse.getResources();
-                List<String> cfSpaces = new ArrayList<String>();
-                if (orgSpace.size() != 0) {
-                    for (int i = 0; i < orgSpace.size(); i++) {
-                        System.out.println("cfSpace Name is :: "+ orgSpace.get(i).getEntity().getName());
-                        cfSpaces.add(orgSpace.get(i).getMetadata().getId());
-                    }
-                }
-                System.out.println("************Inside OrganizationEnroller.java:: CFOrgSpace:: "+ orgSpace.size());
-                createNewServiceInstances(cfSpaces, this.enrolledOrganizationConfig);        
-
+                enrollOrganizationSpaces();            
+                System.out.println("reschedule time:: " + this.rescheduleTime); 
+                reschedule(this.rescheduleTime);
             }
-            System.out.println("reschedule time:: " + this.rescheduleTime); 
-            //rescheduleWithDefaultPeriod();
-            // tempReschedule(this.rescheduleTime);
-            reschedule(this.rescheduleTime);
+        } catch (CloudFoundryException ce) {
+            log.error("Error is: " + ce.getMessage()); 
+            orgRepository.delete(organizationId);
+            killTask();        
 
+        }
+    }
+
+    public void enrollOrganizationSpaces() {
+        try {
+            List<String> cfSpaces = cfSpacesList();
+
+            List<AutoServiceInstance> autoServiceInstances = autoServiceInstanceRepository.findBySpaceId(cfSpaces);
+
+            if (autoServiceInstances.size() != 0) {
+
+                List<String> autoServiceInstanceIDs = new ArrayList<String>();
+
+                for(AutoServiceInstance item : autoServiceInstances) {
+                    autoServiceInstanceIDs.add(item.getServiceInstanceId());
+                }
+
+                Map<String,SpaceEnrollerConfig> existingServiceInstances = alreadyEnrolledSpaces(autoServiceInstanceIDs);
+
+                Collection<String> newSpaces = new HashSet<String>();
+                Collection<String> deletedSpaces = new HashSet<String>();
+                newSpaces.addAll(cfSpaces);
+                newSpaces.removeAll(existingServiceInstances.keySet());     
+                if (newSpaces.size() != 0) {
+                    createNewServiceInstances(newSpaces,enrolledOrganizationConfig);
+                }
+
+                deletedSpaces.addAll(existingServiceInstances.keySet()); //TODO: check a valid case
+                deletedSpaces.removeAll(cfSpaces);
+                if (deletedSpaces.size() != 0) {
+                    deleteServiceInstances(deletedSpaces);
+                }
+
+                cfSpaces.retainAll(existingServiceInstances.keySet());
+                if (cfSpaces.size() != 0) {
+                    updateServiceInstances(existingServiceInstances, cfSpaces, enrolledOrganizationConfig);
+                }
+            } else {
+                //create for all new spaces...first registration of Org
+                createNewServiceInstances(cfSpaces,enrolledOrganizationConfig);
+            }
+        } catch (RuntimeException ce) {
+
+            log.error("Error is: " + ce.getMessage());
+
+        }
+    }
+
+    public  Map<String,SpaceEnrollerConfig> alreadyEnrolledSpaces(List<String> existingServiceIntanstanceIDs) {
+
+        Map<String,SpaceEnrollerConfig> existingServiceInstances = 
+                new HashMap<String, SpaceEnrollerConfig>();
+        try {
+            List<SpaceEnrollerConfig> enrolledSpaces = 
+                    spaceEnrollerConfigRepository.listByIds(existingServiceIntanstanceIDs);
+
+            //create a hashMap of spaces enrolled
+            for (SpaceEnrollerConfig item : enrolledSpaces) {
+                existingServiceInstances.put(item.getSpaceId(), item);              
+            }
+        } catch (RuntimeException re) {
+            log.error("Error is: " + re.getMessage());
+        }
+        return existingServiceInstances;
+
+    }
+
+    public List<String> cfSpacesList() {
+
+        List<String> cfSpaces = new ArrayList<String>();
+        try {
+            ListOrganizationSpacesResponse orgSpaceResponse = cloudFoundryApi
+                    .listOrganizationSpaces(this.organizationId); //all spaces in that org from cf
+            List<SpaceResource> orgSpace = orgSpaceResponse.getResources();
+
+            for (int i = 0; i < orgSpace.size(); i++) {
+                cfSpaces.add(orgSpace.get(i).getMetadata().getId());
+            }
         } catch (CloudFoundryException ce) {
             log.error("Error is: " + ce.getMessage());
-            ce.printStackTrace();
         }
-        System.out.println("*********** Inside RUN END");
+
+        return cfSpaces;
     }
 
-    public void callReschedule(EnrolledOrganizationConfig ec) {
-        System.out.println("*********** Inside call REschedule");
-        this.enrolledOrganizationConfig = ec;
-        this.rescheduleTime = ec.getIdleDuration();
+    void createNewServiceInstances(Collection<String> spaceIds, EnrolledOrganizationConfig enrolledOrganizationConfig) {
 
-        System.out.println("********** callReschedule  :: "+ this.rescheduleTime);
-        start(Duration.ofSeconds(0));
-        System.out.println("*********** Inside call reschedule END");
-
-    }
-
-    /*  public void tempReschedule(Duration d) {
-        reschedule(this.rescheduleTime);
-    }
-     */ 
-
-
-    public OrganizationEnroller getObj() {
-        System.out.println("*******WorkerManager :: OBJ  "+ this);
-        return this;
-    }
-
-    void createNewServiceInstances(List<String> spaceIds, EnrolledOrganizationConfig enrolledOrganizationConfig) {
-        System.out.println("************Inside OrganizationEnroller:: createNewServiceInstaces");
         EnrolledSpaceConfig enrolledSpaceConfig;
         try {
             for(String item : spaceIds) {
                 enrolledSpaceConfig = EnrolledSpaceConfig.builder()
                         .spaceId(item)
                         .organizationId(organizationId)
-                        .idleDuration(enrolledOrganizationConfig.getIdleDuration().toString()) //Check the value
+                        .idleDuration(enrolledOrganizationConfig.getIdleDuration()) //Check the value
                         .build();
-                cloudFoundryApi.createServiceInstance(enrolledSpaceConfig); 
+                createNewServiceInstance(enrolledSpaceConfig); 
             }
         } catch (CloudFoundryException ce) {
             log.error("cloudfoundry error", ce);
         }
     }
 
-    /*
     void deleteServiceInstances(Collection<String> spaceIds) {
-        System.out.println("************Inside OrganizationEnroller:: deleteServiceInstaces");
-        //  utils.deleteServiceInstances(new ArrayList<String>(spaceIds));
 
-    }
-
-    void updateServiceInstances(Map<String,Collection<SpaceEnrollerConfig>> existingServiceInstances, List<String> spaceIds, 
-            EnrolledOrganizationConfig enrolledOrganizationConfig) {
-
-        System.out.println("************Inside OrganizationEnroller:: updateServiceInstaces");
-
-        List<SpaceEnrollerConfig> exisitingInstanceList = new ArrayList<SpaceEnrollerConfig>();
-
-        System.out.println("************Inside OrganizationEnroller::exisitingInstanceList  " + exisitingInstanceList);
         try {
-            for(String item : spaceIds) {
-                //  if(existingServiceInstances.containsKey(item)) {
-               // exisitingInstanceList = (List<SpaceEnrollerConfig>) existingServiceInstances.get(item);
-                utils.deleteServiceInstances((List<SpaceEnrollerConfig>) existingServiceInstances.get(item)); 
-                System.out.println("************** deleted all ");
-                EnrolledSpaceConfig enrolledSpaceConfig = EnrolledSpaceConfig.builder()
-                        .spaceId(item) 
-                        .organizationId(enrolledOrganizationConfig.getOrganizationId())
-                        .idleDuration(enrolledOrganizationConfig.getIdleDuration())
-                        .build();
-                cloudFoundryApi.createServiceInstance(enrolledSpaceConfig);
-                System.out.println("************** service instance updated ");
-                //  }
+            //spaceIds.forEach(spaceId-> utils.deleteServiceInstance(spaceId));
+            for (String item : spaceIds) {
+                utils.deleteServiceInstance(item);
             }
         } catch (CloudFoundryException ce) {
-            log.error(" Service Instance cannot be updated." + ce.getMessage());
+            log.error("cloudfoundry error", ce);
+        }
+
+    }
+
+    void updateServiceInstances(Map<String,SpaceEnrollerConfig> existingServiceInstances, List<String> spaceIds, 
+            EnrolledOrganizationConfig enrolledOrganizationConfig) {
+
+        SpaceEnrollerConfig exisitingInstance;// = new ArrayList<SpaceEnrollerConfig>();
+        try {
+            for(String item : spaceIds) {
+                if(existingServiceInstances.containsKey(item)) {
+                    exisitingInstance = existingServiceInstances.get(item);
+                    if (!(checkParameters(exisitingInstance,enrolledOrganizationConfig))) {
+
+                        utils.deleteServiceInstance(exisitingInstance.getId());
+                        //delete from autoServiceInstance
+                        autoServiceInstanceRepository.delete(exisitingInstance.getId());
+                        EnrolledSpaceConfig enrolledSpaceConfig = EnrolledSpaceConfig.builder()
+                                .spaceId(item)
+                                .organizationId(enrolledOrganizationConfig.getOrganizationId())
+                                .idleDuration(enrolledOrganizationConfig.getIdleDuration())
+                                .build();
+                        createNewServiceInstance(enrolledSpaceConfig);
+                    }
+                }
+            }
+        } catch (CloudFoundryException ce) {
+            log.error(" Service Instance cannot be deleted " + ce.getMessage());
         }        
     }
-     */  
+
+    public void createNewServiceInstance(EnrolledSpaceConfig enrolledSpaceConfig) throws CloudFoundryException {
+
+        CreateServiceInstanceResponse createServiceInstanceResponse = 
+                cloudFoundryApi.createServiceInstance(enrolledSpaceConfig);
+        AutoServiceInstance autoServiceInstance = AutoServiceInstance.builder()
+                .serviceInstanceId(createServiceInstanceResponse.getMetadata().getId())
+                .spaceId(enrolledSpaceConfig.getSpaceId())
+                .build();
+        autoServiceInstanceRepository.save(autoServiceInstance); 
+    }
+
+    boolean checkParameters(SpaceEnrollerConfig oldInstance, EnrolledOrganizationConfig enrolledOrganizationConfig ) {
+
+        boolean flag = false;
+        if  (oldInstance.getIdleDuration().compareTo(enrolledOrganizationConfig.getIdleDuration()) == 0) {
+            flag = true;
+        }
+
+        return flag;
+    }
+
+
+
+    public void callReschedule(EnrolledOrganizationConfig ec) {
+
+        this.enrolledOrganizationConfig = ec;
+        this.rescheduleTime = ec.getIdleDuration();
+        start(Duration.ofSeconds(0));
+    }
+
+
+    public OrganizationEnroller getObj() {
+        return this;
+    }
 
 }
+

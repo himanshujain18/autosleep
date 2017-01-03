@@ -60,5 +60,9 @@ public abstract class AbstractPeriodicTask implements Runnable {
     public void stopTask() {
         clock.removeTask(getTaskId());
     }
+    
+    public void killTask() {
+        clock.deleteTask(getTaskId());
+    }
 
 }

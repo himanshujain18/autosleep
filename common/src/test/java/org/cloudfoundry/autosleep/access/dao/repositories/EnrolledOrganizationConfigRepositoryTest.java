@@ -21,7 +21,8 @@ import java.time.Duration;
 
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
+//@ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
+//Commented for test
 public abstract class EnrolledOrganizationConfigRepositoryTest extends CrudRepositoryTest<EnrolledOrganizationConfig> {
 
     private static final Duration duration = Duration.ofMinutes(2);

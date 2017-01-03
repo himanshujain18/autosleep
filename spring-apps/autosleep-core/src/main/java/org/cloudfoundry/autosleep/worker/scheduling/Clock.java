@@ -27,7 +27,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -54,10 +53,20 @@ public class Clock {
      * @param id task id, will be used to cancel it
      */
     public void removeTask(String id) {
-        log.debug("removeTask - task {}", id);
-        tasks.remove(id);
+        log.debug("removeTask - task {}", id);     
+        tasks.remove(id);    
     }
-
+    
+    public void deleteTask(String id) {
+        log.debug("deleteTask - task {}", id);     
+        System.out.println("delete method START");
+        
+        ScheduledFuture<?> oldHandle = tasks.get(id);        
+        if(oldHandle != null) {
+            oldHandle.cancel(true);
+        }
+        tasks.remove(id);        
+    }
     /**
      * Schedule a Runnable to be run after a certain delay.
      * @param id       task id, will be used to remove it
@@ -74,15 +83,7 @@ public class Clock {
         }
         
         ScheduledFuture<?> handle = timeManager.schedule(action, duration);
-        tasks.put(id, handle);
-        
-        //For TESTING
-        Iterator<Map.Entry<String/*taskId*/, ScheduledFuture<?>>> entries = tasks.entrySet().iterator();
-        while (entries.hasNext()) {
-            Map.Entry<String/*taskId*/, ScheduledFuture<?>> entry = entries.next();
-            System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
-        }
-        
+        tasks.put(id, handle);    
     }
 
 }

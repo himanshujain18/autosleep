@@ -36,6 +36,5 @@ public class EnrolledOrganizationConfig {
     @JsonProperty(value = "idle-duration")
     @Lob
     private Duration idleDuration;   
-    //private String idleDuration;
     
 }
