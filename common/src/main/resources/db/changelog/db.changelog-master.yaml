@@ -281,3 +281,6 @@ databaseChangeLog:
         - column:
             name: space_id
             type: VARCHAR(255)
+        - column:
+            name: organization_id
+            type: VARCHAR(255)

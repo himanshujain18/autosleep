@@ -10,7 +10,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface AutoServiceInstanceRepository extends JpaRepository<AutoServiceInstance, String> {
     
-    @Query("select a from AutoServiceInstance a where a.spaceId IN (:ids)")
-    List<AutoServiceInstance> findBySpaceId(@Param("ids") List<String> ids);
+    @Query("select a from AutoServiceInstance a where a.organizationId = :id")
+    List<AutoServiceInstance> findByOrgId(@Param("id") String id);
+    
+    @Query("delete from AutoServiceInstance a where a.organizationId = :id")
+    void deleteByOrgId(@Param("id") String id);
 
 }

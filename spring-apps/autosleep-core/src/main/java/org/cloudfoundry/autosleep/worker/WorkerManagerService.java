@@ -27,6 +27,8 @@ import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationCo
 
 public interface WorkerManagerService {
     
+    void orgEnrollmentCleanUp(EnrolledOrganizationConfigRepository orgRepository);
+    
     Map<String,OrganizationEnroller> getOrganizationObjects();
 
     void registerApplicationStopper(SpaceEnrollerConfig config, String applicationId, String appBindingId);
@@ -38,4 +40,3 @@ public interface WorkerManagerService {
     void setOrganizationObjects(String id, OrganizationEnroller orgEnroller);
  
 }
-//   void organizationDeRegister(EnrolledOrganizationConfigRepository orgRepository);

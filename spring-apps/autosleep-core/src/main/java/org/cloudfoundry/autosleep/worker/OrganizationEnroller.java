@@ -92,7 +92,8 @@ class OrganizationEnroller extends AbstractPeriodicTask {
             }
         } catch (CloudFoundryException ce) {
             log.error("Error is: " + ce.getMessage()); 
-            orgRepository.delete(organizationId);
+            autoServiceInstanceRepository.deleteByOrgId(this.organizationId);
+            orgRepository.delete(organizationId); //TO CHECK: this should delete the junk orgID
             killTask();        
 
         }
@@ -102,9 +103,9 @@ class OrganizationEnroller extends AbstractPeriodicTask {
         try {
             List<String> cfSpaces = cfSpacesList();
 
-            List<AutoServiceInstance> autoServiceInstances = autoServiceInstanceRepository.findBySpaceId(cfSpaces);
+            List<AutoServiceInstance> autoServiceInstances = autoServiceInstanceRepository.findByOrgId(this.organizationId);
 
-            if (autoServiceInstances.size() != 0) {
+            if (autoServiceInstances.size() != 0) { //some service Instances is already registered
 
                 List<String> autoServiceInstanceIDs = new ArrayList<String>();
 
@@ -220,9 +221,7 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                     exisitingInstance = existingServiceInstances.get(item);
                     if (!(checkParameters(exisitingInstance,enrolledOrganizationConfig))) {
 
-                        utils.deleteServiceInstance(exisitingInstance.getId());
-                        //delete from autoServiceInstance
-                        autoServiceInstanceRepository.delete(exisitingInstance.getId());
+                        utils.deleteServiceInstance(exisitingInstance.getId());                       
                         EnrolledSpaceConfig enrolledSpaceConfig = EnrolledSpaceConfig.builder()
                                 .spaceId(item)
                                 .organizationId(enrolledOrganizationConfig.getOrganizationId())
@@ -242,6 +241,7 @@ class OrganizationEnroller extends AbstractPeriodicTask {
         CreateServiceInstanceResponse createServiceInstanceResponse = 
                 cloudFoundryApi.createServiceInstance(enrolledSpaceConfig);
         AutoServiceInstance autoServiceInstance = AutoServiceInstance.builder()
+                .organizationId(this.organizationId)
                 .serviceInstanceId(createServiceInstanceResponse.getMetadata().getId())
                 .spaceId(enrolledSpaceConfig.getSpaceId())
                 .build();

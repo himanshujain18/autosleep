@@ -29,5 +29,8 @@ public class AutoServiceInstance {
     
     @JsonProperty
     private String spaceId;
+    
+    @JsonProperty
+    private String organizationId;
 
 }

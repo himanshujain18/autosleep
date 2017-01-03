@@ -141,6 +141,7 @@ public class AutosleepConfigControllerUtils {
                 }
             }
             cloudFoundryApi.deleteServiceInstance(instanceId);
+            autoServiceInstanceRepository.delete(instanceId);
         } catch (RuntimeException ce) {         
             throw new CloudFoundryException(ce);
         }

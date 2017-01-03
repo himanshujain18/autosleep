@@ -182,21 +182,25 @@ public class WorkerManager implements WorkerManagerService {
                 .build();
         spaceEnroller.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);
     }
+    
+    
+    @Override
+    public void orgEnrollmentCleanUp(EnrolledOrganizationConfigRepository orgRepository) {
+        OrgEnrollmentCleanUp orgDeregister = OrgEnrollmentCleanUp.builder()
+                .clock(clock)
+                .period(Config.DEFAULT_INACTIVITY_PERIOD)
+                .orgRepository(orgRepository)                
+              //  .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)
+                //.cloudFoundryApi(cloudFoundryApi)
+                .utils(utils)
+                .build();
+
+        orgDeregister.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);   //TODO: Decide delay time to start this thread 
+    }
+    
 
 }
 
-/*
-@Override
-public void organizationDeRegister(EnrolledOrganizationConfigRepository orgRepository) {
-    OrganizationDeRegister orgDeregister = OrganizationDeRegister.builder()
-            .clock(clock)
-            .period(Config.DEFAULT_INACTIVITY_PERIOD)
-            .orgRepository(orgRepository)                
-          //  .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)
-            .cloudFoundryApi(cloudFoundryApi)
-            .utils(utils)
-            .build();
 
-    orgDeregister.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);   //TODO: Decide delay time to start this thread 
-}
-*/
+
+
