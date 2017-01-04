@@ -90,13 +90,12 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                 System.out.println("reschedule time:: " + this.rescheduleTime); 
                 reschedule(this.rescheduleTime);
             }
-        } catch (CloudFoundryException ce) {
+        } catch (org.cloudfoundry.client.v2.CloudFoundryException ce) {
             log.error("Error is: " + ce.getMessage()); 
             autoServiceInstanceRepository.deleteByOrgId(this.organizationId);
             orgRepository.delete(organizationId); //TO CHECK: this should delete the junk orgID
-            killTask();        
-
-        }
+            killTask();            
+        } 
     }
 
     public void enrollOrganizationSpaces() {
@@ -137,14 +136,12 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                 //create for all new spaces...first registration of Org
                 createNewServiceInstances(cfSpaces,enrolledOrganizationConfig);
             }
-        } catch (RuntimeException ce) {
-
+        } catch (CloudFoundryException ce) {
             log.error("Error is: " + ce.getMessage());
-
         }
     }
 
-    public  Map<String,SpaceEnrollerConfig> alreadyEnrolledSpaces(List<String> existingServiceIntanstanceIDs) {
+    public  Map<String,SpaceEnrollerConfig> alreadyEnrolledSpaces(List<String> existingServiceIntanstanceIDs) throws CloudFoundryException {
 
         Map<String,SpaceEnrollerConfig> existingServiceInstances = 
                 new HashMap<String, SpaceEnrollerConfig>();
@@ -157,13 +154,14 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                 existingServiceInstances.put(item.getSpaceId(), item);              
             }
         } catch (RuntimeException re) {
-            log.error("Error is: " + re.getMessage());
+            log.error("Error in retrieving already enrolled serviceInstances. Error: " + re.getMessage());
+            throw new CloudFoundryException(re);
         }
         return existingServiceInstances;
 
     }
 
-    public List<String> cfSpacesList() {
+    public List<String> cfSpacesList() throws CloudFoundryException {
 
         List<String> cfSpaces = new ArrayList<String>();
         try {
@@ -175,7 +173,8 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                 cfSpaces.add(orgSpace.get(i).getMetadata().getId());
             }
         } catch (CloudFoundryException ce) {
-            log.error("Error is: " + ce.getMessage());
+            log.error("SpaceIds from cloudfoundry cannot be retrieved. Error: " + ce.getMessage());
+            throw ce;
         }
 
         return cfSpaces;
@@ -194,11 +193,11 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                 createNewServiceInstance(enrolledSpaceConfig); 
             }
         } catch (CloudFoundryException ce) {
-            log.error("cloudfoundry error", ce);
+            log.error("Service Instances for new spaces cannot be created. Error: ", ce.getMessage());
         }
     }
 
-    void deleteServiceInstances(Collection<String> spaceIds) {
+    void deleteServiceInstances(Collection<String> spaceIds) throws CloudFoundryException {
 
         try {
             //spaceIds.forEach(spaceId-> utils.deleteServiceInstance(spaceId));
@@ -207,12 +206,13 @@ class OrganizationEnroller extends AbstractPeriodicTask {
             }
         } catch (CloudFoundryException ce) {
             log.error("cloudfoundry error", ce);
+            throw ce;
         }
 
     }
 
     void updateServiceInstances(Map<String,SpaceEnrollerConfig> existingServiceInstances, List<String> spaceIds, 
-            EnrolledOrganizationConfig enrolledOrganizationConfig) {
+            EnrolledOrganizationConfig enrolledOrganizationConfig) throws CloudFoundryException {
 
         SpaceEnrollerConfig exisitingInstance;// = new ArrayList<SpaceEnrollerConfig>();
         try {
@@ -232,20 +232,26 @@ class OrganizationEnroller extends AbstractPeriodicTask {
                 }
             }
         } catch (CloudFoundryException ce) {
-            log.error(" Service Instance cannot be deleted " + ce.getMessage());
+            log.error(" Service Instances cannot be updated. Error: " + ce.getMessage());
+            throw ce;
         }        
     }
 
     public void createNewServiceInstance(EnrolledSpaceConfig enrolledSpaceConfig) throws CloudFoundryException {
 
-        CreateServiceInstanceResponse createServiceInstanceResponse = 
-                cloudFoundryApi.createServiceInstance(enrolledSpaceConfig);
-        AutoServiceInstance autoServiceInstance = AutoServiceInstance.builder()
-                .organizationId(this.organizationId)
-                .serviceInstanceId(createServiceInstanceResponse.getMetadata().getId())
-                .spaceId(enrolledSpaceConfig.getSpaceId())
-                .build();
-        autoServiceInstanceRepository.save(autoServiceInstance); 
+        try {
+            CreateServiceInstanceResponse createServiceInstanceResponse = 
+                    cloudFoundryApi.createServiceInstance(enrolledSpaceConfig);
+            AutoServiceInstance autoServiceInstance = AutoServiceInstance.builder()
+                    .organizationId(this.organizationId)
+                    .serviceInstanceId(createServiceInstanceResponse.getMetadata().getId())
+                    .spaceId(enrolledSpaceConfig.getSpaceId())
+                    .build();
+            autoServiceInstanceRepository.save(autoServiceInstance); 
+        } catch (CloudFoundryException ce) {
+            log.error(" Service Instance cannot be created. Error: " + ce.getMessage());
+            throw ce;
+        }
     }
 
     boolean checkParameters(SpaceEnrollerConfig oldInstance, EnrolledOrganizationConfig enrolledOrganizationConfig ) {
@@ -258,15 +264,12 @@ class OrganizationEnroller extends AbstractPeriodicTask {
         return flag;
     }
 
-
-
     public void callReschedule(EnrolledOrganizationConfig ec) {
 
         this.enrolledOrganizationConfig = ec;
         this.rescheduleTime = ec.getIdleDuration();
         start(Duration.ofSeconds(0));
     }
-
 
     public OrganizationEnroller getObj() {
         return this;
