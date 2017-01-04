@@ -161,7 +161,6 @@ public class AutosleepServiceInstanceService implements ServiceInstanceService {
             // save in repository before calling cloudfoundry because otherwise local service binding controller will
             // fail retrieving the service
             spaceEnrollerConfigRepository.save(spaceEnrollerConfig);
-            System.out.println("After saved in table");
             workerManager.registerSpaceEnroller(spaceEnrollerConfig);
             
             System.out.println("Space Enroller called for new service instance ");

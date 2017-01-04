@@ -17,7 +17,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class OrganizationDeRegister extends AbstractPeriodicTask {
+public class OrgEnrollmentCleanUp extends AbstractPeriodicTask {
 
     private final SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
 
@@ -28,14 +28,14 @@ public class OrganizationDeRegister extends AbstractPeriodicTask {
     private AutosleepConfigControllerUtils utils;
 
     @Builder
-    OrganizationDeRegister(Clock clock,
+    OrgEnrollmentCleanUp(Clock clock,
             Duration period,           
             SpaceEnrollerConfigRepository spaceEnrollerConfigRepository,         
             EnrolledOrganizationConfigRepository orgRepository,
             AutosleepConfigControllerUtils utils) {
-        super(clock, period);
-        this.spaceEnrollerConfigRepository = spaceEnrollerConfigRepository;
+        super(clock, period);        
         this.orgRepository = orgRepository;
+        this.spaceEnrollerConfigRepository = spaceEnrollerConfigRepository;
         this.utils = utils;
     }
 
@@ -84,3 +84,5 @@ public class OrganizationDeRegister extends AbstractPeriodicTask {
         }
     }
 }
+
+

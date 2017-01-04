@@ -26,16 +26,16 @@ import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationConfigRepository;
 
 public interface WorkerManagerService {
+    
+    void orgEnrollmentCleanUp(EnrolledOrganizationConfigRepository orgRepository);
+    
+    Map<String,OrganizationEnroller> getOrganizationObjects();
 
     void registerApplicationStopper(SpaceEnrollerConfig config, String applicationId, String appBindingId);
 
     void registerSpaceEnroller(SpaceEnrollerConfig config);
     
     void registerOrganizationEnroller(EnrolledOrganizationConfig orgInfo);
-
-    void organizationDeRegister(EnrolledOrganizationConfigRepository orgRepository);
-    
-    Map<String,OrganizationEnroller> getOrganizationObjects();
     
     void setOrganizationObjects(String id, OrganizationEnroller orgEnroller);
  

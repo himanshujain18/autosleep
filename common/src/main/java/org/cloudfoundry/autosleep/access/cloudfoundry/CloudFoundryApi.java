@@ -23,10 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationActivity;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
 import org.cloudfoundry.autosleep.access.dao.model.ApplicationInfo;
-import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.Config.CloudFoundryAppState;
 import org.cloudfoundry.autosleep.config.Config.EnvKey;
+import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.applications.ApplicationInstanceInfo;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -45,6 +45,8 @@ import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.events.ListEventsResponse;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsResponse;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
 import org.cloudfoundry.client.v2.routes.GetRouteRequest;
@@ -56,6 +58,7 @@ import org.cloudfoundry.client.v2.servicebindings.CreateServiceBindingRequest;
 import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
 import org.cloudfoundry.client.v2.serviceinstances.BindServiceInstanceToRouteRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
 import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceplans.ListServicePlansRequest;
 import org.cloudfoundry.client.v2.serviceplans.ListServicePlansResponse;
@@ -490,30 +493,32 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         }
         return response;
     }
-    
+
     @Override
     public ListOrganizationSpacesResponse listOrganizationSpaces(String organizationId) throws CloudFoundryException {
-        System.out.println("List spaces for an org");
+
         ListOrganizationSpacesResponse response;     
         try {
             ListOrganizationSpacesRequest request = 
                     ListOrganizationSpacesRequest.builder().organizationId(organizationId).build();
             response = cfClient.organizations().listSpaces(request).get();
+
         } catch (RuntimeException re) {
-            System.out.println("List spaces: error is"+re.getMessage());
             throw new CloudFoundryException(re);
         }
         return response;
     }
 
     @Override
-    public void createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) throws CloudFoundryException {
+    public CreateServiceInstanceResponse createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) 
+            throws CloudFoundryException {
+        CreateServiceInstanceResponse response = null;
 
         String instanceName = "autosleep" + System.nanoTime();
         Map<String, Object> requestParameters = new HashMap<String, Object>();
 
         if (serviceInstanceInfo.getIdleDuration() != null) {
-            requestParameters.put("idle-duration", serviceInstanceInfo.getIdleDuration());
+            requestParameters.put("idle-duration", serviceInstanceInfo.getIdleDuration().toString());
         }
         requestParameters.put("auto-enrollment", "transitive");
 
@@ -521,19 +526,21 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         if (serviceId != null ) {
             String servicePlanId = getServicePlanId(serviceId);
             try {
-                CreateServiceInstanceRequest  requestC = CreateServiceInstanceRequest.builder()
+                CreateServiceInstanceRequest  request = CreateServiceInstanceRequest.builder()
                         .spaceId(serviceInstanceInfo.getSpaceId())
                         .name(instanceName)
                         .servicePlanId(servicePlanId)
                         .parameters(requestParameters)
                         .build();  
-                cfClient.serviceInstances().create(requestC).get();    
+                response = cfClient.serviceInstances().create(request).get();           
             } catch (org.cloudfoundry.client.v2.CloudFoundryException re) {           
                 throw new CloudFoundryException(re);
             } 
         } else {
             log.error("autosleep service is not available");
         }
+
+        return response;
     }
 
     @Override
@@ -542,6 +549,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         String serviceId = null;
         String serviceBrokerName = environment.getProperty(EnvKey.CF_SERVICE_BROKER_NAME,
                 Config.ServiceCatalog.DEFAULT_SERVICE_BROKER_NAME);
+        System.out.println("getServiceId::serviceBrokerName " + serviceBrokerName);
         try {
             ListServicesRequest request = ListServicesRequest.builder().label(serviceBrokerName).build();         
             response = cfClient.services().list(request).get();           
@@ -551,6 +559,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
                 serviceId = serviceResources.get(0).getMetadata().getId();
             } 
         } catch (RuntimeException re) {
+            re.printStackTrace();
             throw new CloudFoundryException(re);
         }
         return serviceId;
@@ -602,5 +611,17 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         } catch (RuntimeException re) {
             throw new CloudFoundryException(re);
         }
-    }      
+    }
+
+    public ListOrganizationsResponse listAllOrganizations() throws CloudFoundryException {
+        ListOrganizationsResponse response;
+        try {
+            ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
+            response = cfClient.organizations().list(request).get();
+        } catch (RuntimeException re) {
+            throw new CloudFoundryException(re);
+        }        
+        return response;
+    }    
+
 }

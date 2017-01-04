@@ -136,6 +136,7 @@ public class AutosleepConfigController {
     fetchEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
             throws CloudFoundryException {
 
+        // System.out.println("Listed ORgs are :: "+ cfApi.listAllOrganizations());
         AutosleepConfigControllerRequest responseObject = null; 
         EnrolledOrganizationConfig orgInfo = null;        
         HttpStatus status = null;
@@ -183,15 +184,13 @@ public class AutosleepConfigController {
         try {
             orgInfo = orgRepository.findOne(organizationId);
             if (orgInfo != null) {                                 
-                status = HttpStatus.OK;
-                orgRepository.delete(orgInfo);
-                System.out.println("*************before Query*****");
+                status = HttpStatus.OK;                
+                //STOP THE ENROLLER THREAD
+                utils.stopOrgEnrollerOnDelete(organizationId);
                 List<SpaceEnrollerConfig> serviceInstances = spaceEnrollerConfigRepository.listByOrganizationId(organizationId);
-                System.out.println("*************after Query*****");
-                for(SpaceEnrollerConfig item:serviceInstances) {
-                    System.out.println("*************service Instance are ::"+item.getId());
-                }
+
                 utils.deleteServiceInstances(serviceInstances);
+                orgRepository.delete(orgInfo);
                 log.info("Organization Id : "  + organizationId  + " is unenrolled from autosleep");
             } else {
                 status = HttpStatus.NOT_FOUND;

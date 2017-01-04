@@ -24,6 +24,8 @@ import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsResponse;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -34,7 +36,7 @@ public interface CloudFoundryApiService {
 
     void bindRoutes(String serviceInstanceId, List<String> routeIds) throws CloudFoundryException;
    
-    void createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) throws CloudFoundryException;
+    CreateServiceInstanceResponse createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) throws CloudFoundryException;
 
     void deleteServiceInstance(String serviceInstanceId) throws CloudFoundryException;
     
@@ -50,13 +52,15 @@ public interface CloudFoundryApiService {
     
     String getServicePlanId(String serviceId) throws CloudFoundryException;
     
-    GetOrganizationResponse getOrganizationDetails(String organizationId) throws CloudFoundryException; 
+    GetOrganizationResponse getOrganizationDetails(String organizationId) throws org.cloudfoundry.client.v2.CloudFoundryException; 
 
     boolean isAppRunning(String appUid) throws CloudFoundryException;
 
     List<ApplicationIdentity> listAliveApplications(String spaceUuid, Pattern excludeNames)
             throws CloudFoundryException;
-
+    
+    ListOrganizationsResponse listAllOrganizations() throws CloudFoundryException;
+    
     List<String/**ids**/> listApplicationRoutes(String applicationUuid) throws CloudFoundryException;
 
     List<String/**ids**/> listRouteApplications(String routeUuid) throws CloudFoundryException;

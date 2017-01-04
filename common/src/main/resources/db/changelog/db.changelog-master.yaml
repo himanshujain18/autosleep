@@ -248,6 +248,7 @@ databaseChangeLog:
             type: VARCHAR(255)
             constraints:
                 primaryKey: true
+                nullable: false
         - column:
             name: idle_duration
             type: BLOB
@@ -264,3 +265,22 @@ databaseChangeLog:
         columnName: state
         newDataType: INT
         tableName: space_enroller_config
+- changeSet:
+    id: 5
+    author: SAP
+    changes:
+    - createTable:
+        tableName: auto_service_instance
+        columns:
+        - column:
+            name: service_instance_id
+            type: VARCHAR(255)
+            constraints:
+                primaryKey: true
+                nullable: false
+        - column:
+            name: space_id
+            type: VARCHAR(255)
+        - column:
+            name: organization_id
+            type: VARCHAR(255)
