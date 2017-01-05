@@ -22,7 +22,7 @@ package org.cloudfoundry.autosleep.worker;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.autosleep.access.dao.repositories.ProxyMapEntryRepository;
 import org.cloudfoundry.autosleep.config.Config;
-import org.cloudfoundry.autosleep.config.DeployedApplicationConfig;
+import org.cloudfoundry.autosleep.config.DeployedApplicationConfig; 
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.ApplicationRepository;
@@ -55,25 +55,25 @@ public class WorkerManager implements WorkerManagerService {
 
     @Autowired
     private ApplicationRepository applicationRepository;
-    
+
     @Autowired
     private AutoServiceInstanceRepository autoServiceInstanceRepository;
 
     @Autowired
     private BindingRepository bindingRepository;
-
+    
     @Autowired
     private Clock clock;
-
+    
     @Autowired
     private CloudFoundryApiService cloudFoundryApi;
 
     @Autowired
     private DeployedApplicationConfig.Deployment deployment;
-    
+
     @Autowired
     private EnrolledOrganizationConfigRepository orgRepository;
-    
+
     @Autowired
     private ProxyMapEntryRepository proxyMapEntryRepository;
 
@@ -92,14 +92,17 @@ public class WorkerManager implements WorkerManagerService {
                 + "instance of autosleep)");
         this.organizationObjects = new HashMap<String,OrganizationEnroller>();
 
+
         List<EnrolledOrganizationConfig> enrolledOrgs = orgRepository.findAll();   
-      //  orgRepository.findAll().forEach(this::registerOrganizationEnroller);        
-        
+        //  orgRepository.findAll().forEach(this::registerOrganizationEnroller);        
+
         if (enrolledOrgs != null) {
             for (EnrolledOrganizationConfig item:enrolledOrgs) {
+
                 registerOrganizationEnroller(item);                   
             }            
         }
+
 
         log.debug("Initializer watchers for every app already enrolled (except if handle by another instance of "
                 + "autosleep)");
@@ -182,25 +185,5 @@ public class WorkerManager implements WorkerManagerService {
                 .build();
         spaceEnroller.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);
     }
-    
-    
-    @Override
-    public void orgEnrollmentCleanUp(EnrolledOrganizationConfigRepository orgRepository) {
-        OrgEnrollmentCleanUp orgDeregister = OrgEnrollmentCleanUp.builder()
-                .clock(clock)
-                .period(Config.DEFAULT_INACTIVITY_PERIOD)
-                .orgRepository(orgRepository)                
-              //  .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)
-                //.cloudFoundryApi(cloudFoundryApi)
-                .utils(utils)
-                .build();
-
-        orgDeregister.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK);   //TODO: Decide delay time to start this thread 
-    }
-    
 
 }
-
-
-
-

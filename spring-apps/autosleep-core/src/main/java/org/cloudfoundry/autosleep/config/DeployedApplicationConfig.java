@@ -66,7 +66,7 @@ public class DeployedApplicationConfig {
     @Bean
     public Deployment loadCurrentDeployment() throws IOException {
         String deployment = environment.getProperty(Config.EnvKey.APPLICATION_DESCRIPTION_ENVIRONMENT_KEY);
-        if (deployment == null) {
+        if (deployment == null){
             return null;
         } else {
             ObjectMapper objectMapper = new ObjectMapper();
