@@ -141,23 +141,41 @@ class OrganizationEnroller extends AbstractPeriodicTask {
         }
     }
 
-    public  Map<String,SpaceEnrollerConfig> alreadyEnrolledSpaces(List<String> existingServiceIntanstanceIDs) throws CloudFoundryException {
+    public  Map<String,SpaceEnrollerConfig> alreadyEnrolledSpaces(List<String> autoServiceInstanceIDs) throws CloudFoundryException {
 
         Map<String,SpaceEnrollerConfig> existingServiceInstances = 
                 new HashMap<String, SpaceEnrollerConfig>();
         try {
             List<SpaceEnrollerConfig> enrolledSpaces = 
-                    spaceEnrollerConfigRepository.listByIds(existingServiceIntanstanceIDs);
+                    spaceEnrollerConfigRepository.listByIds(autoServiceInstanceIDs);
 
             //create a hashMap of spaces enrolled
             for (SpaceEnrollerConfig item : enrolledSpaces) {
                 existingServiceInstances.put(item.getSpaceId(), item);              
             }
+            deleteInvalidAutoServiceInstance(autoServiceInstanceIDs,enrolledSpaces);
+            
         } catch (RuntimeException re) {
             log.error("Error in retrieving already enrolled serviceInstances. Error: " + re.getMessage());
             throw new CloudFoundryException(re);
         }
         return existingServiceInstances;
+
+    }
+
+    public void deleteInvalidAutoServiceInstance(List<String> autoServiceInstances, List<SpaceEnrollerConfig> spaceConfigServiceInstances) {
+
+        List<String> spaceServiceInstances =  new ArrayList<String>();
+        for( SpaceEnrollerConfig item : spaceConfigServiceInstances) {
+            spaceServiceInstances.add(item.getId());
+        }
+        //delete junk entries from autoServiceinstance Table
+        Collection<String> invalidServiceInstance = new HashSet<String>();
+        invalidServiceInstance.addAll(autoServiceInstances);
+        invalidServiceInstance.removeAll(spaceServiceInstances);
+
+        invalidServiceInstance.forEach(item -> autoServiceInstanceRepository.delete(item));
+
 
     }
 

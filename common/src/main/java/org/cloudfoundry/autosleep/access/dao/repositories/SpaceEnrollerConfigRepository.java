@@ -36,7 +36,4 @@ public interface SpaceEnrollerConfigRepository extends JpaRepository<SpaceEnroll
     @Query("select s from SpaceEnrollerConfig s where s.id IN (:ids)")
     List<SpaceEnrollerConfig> listByIds(@Param("ids") List<String> ids);
     
-    @Query("select s from SpaceEnrollerConfig s where s.organizationId NOT IN (:ids)")
-    List<SpaceEnrollerConfig> deRegisteredOrganizationServiceInstances(@Param("ids") List<String> ids);
-    
 }
