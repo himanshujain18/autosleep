@@ -71,9 +71,10 @@ public class AutosleepConfigControllerUtils {
 
     public void updateOrganization(EnrolledOrganizationConfig orgInfo) {
 
-        OrganizationEnroller orgEnroller ;
+        // orgEnroller ;
         try {             
-            orgEnroller =  workerManager.getOrganizationObjects().get(orgInfo.getOrganizationId());                
+            OrganizationEnroller orgEnroller =  
+                    workerManager.getOrganizationObjects().get(orgInfo.getOrganizationId());                
             orgEnroller.callReschedule(orgInfo);
         } catch (RuntimeException re) {
             log.error("Error is : " + re.getMessage());
@@ -83,9 +84,9 @@ public class AutosleepConfigControllerUtils {
 
     public void stopOrgEnrollerOnDelete(String organizationId) {
 
-        OrganizationEnroller orgEnroller ;
+       // OrganizationEnroller orgEnroller ;
         try {             
-            orgEnroller =  workerManager.getOrganizationObjects().get(organizationId);                
+            OrganizationEnroller orgEnroller =  workerManager.getOrganizationObjects().get(organizationId);                
             orgEnroller.killTask();
         } catch (RuntimeException re) {
             log.error("Error is : " + re.getMessage());
@@ -95,9 +96,9 @@ public class AutosleepConfigControllerUtils {
 
     public void registerOrganization(EnrolledOrganizationConfig orgInfo) {
 
-        OrganizationEnroller orgEnroller ;  
+       // OrganizationEnroller orgEnroller ;  
         try {
-            orgEnroller = OrganizationEnroller.builder()
+            OrganizationEnroller orgEnroller = OrganizationEnroller.builder()
                     .autoServiceInstanceRepository(autoServiceInstanceRepository)
                     .clock(clock)
                     .cloudFoundryApi(cloudFoundryApi)
@@ -118,6 +119,7 @@ public class AutosleepConfigControllerUtils {
         }
     }
 
+    /*
     public void deleteServiceInstances(List<SpaceEnrollerConfig> serviceInstances) {
 
         for (SpaceEnrollerConfig serviceInstance : serviceInstances) {                     
@@ -128,7 +130,7 @@ public class AutosleepConfigControllerUtils {
             }
         }
     }
-
+*/
     public void deleteServiceInstance(String instanceId) throws CloudFoundryException {
 
         try {
@@ -142,8 +144,8 @@ public class AutosleepConfigControllerUtils {
             }
             cloudFoundryApi.deleteServiceInstance(instanceId);
             autoServiceInstanceRepository.delete(instanceId);
-        } catch (RuntimeException ce) {         
-            throw new CloudFoundryException(ce);
+        } catch (CloudFoundryException ce) {         
+            log.error("Service Instance " + instanceId + " cannot be deleted. Error: " + ce.getMessage());
         }
     }
 }

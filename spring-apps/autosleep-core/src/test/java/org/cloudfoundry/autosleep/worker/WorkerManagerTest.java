@@ -98,6 +98,8 @@ public class WorkerManagerTest {
     private List<UUID> remoteApplications = Arrays.asList(UUID.randomUUID(), UUID.randomUUID());
 
     private List<String> serviceIds = Arrays.asList("serviceId1", "serviceId2");
+    
+    private List<String> organizationIds = Arrays.asList("orgId1", "orgId2");
 
     @InjectMocks
     @Spy
@@ -120,8 +122,7 @@ public class WorkerManagerTest {
         when(mockBindingRepo.findAllByResourceType(Application)).thenReturn(storedBindings);
 
         //init mock orgRepo
-        List<EnrolledOrganizationConfig> fakeList = Arrays.asList(mock(EnrolledOrganizationConfig.class));
-        
+        List<EnrolledOrganizationConfig> fakeList = Arrays.asList(mock(EnrolledOrganizationConfig.class));        
         when(mockOrgRepo.findAll()).thenReturn(fakeList);
         
         //init mock serviceRepo

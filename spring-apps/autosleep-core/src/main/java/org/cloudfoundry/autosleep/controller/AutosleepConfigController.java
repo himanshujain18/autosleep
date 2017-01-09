@@ -189,7 +189,8 @@ public class AutosleepConfigController {
                 utils.stopOrgEnrollerOnDelete(organizationId);
                 List<SpaceEnrollerConfig> serviceInstances = spaceEnrollerConfigRepository.listByOrganizationId(organizationId);
 
-                utils.deleteServiceInstances(serviceInstances);
+               // utils.deleteServiceInstances(serviceInstances);
+                serviceInstances.forEach(serviceInstance-> utils.deleteServiceInstance(serviceInstance.getId()));
                 orgRepository.delete(orgInfo);
                 log.info("Organization Id : "  + organizationId  + " is unenrolled from autosleep");
             } else {

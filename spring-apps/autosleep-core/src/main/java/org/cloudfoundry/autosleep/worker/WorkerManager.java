@@ -61,10 +61,10 @@ public class WorkerManager implements WorkerManagerService {
 
     @Autowired
     private BindingRepository bindingRepository;
-    
+
     @Autowired
     private Clock clock;
-    
+
     @Autowired
     private CloudFoundryApiService cloudFoundryApi;
 
@@ -92,20 +92,7 @@ public class WorkerManager implements WorkerManagerService {
                 + "instance of autosleep)");
         this.organizationObjects = new HashMap<String,OrganizationEnroller>();
 
-
-        List<EnrolledOrganizationConfig> enrolledOrgs = orgRepository.findAll();   
-        //  orgRepository.findAll().forEach(this::registerOrganizationEnroller);        
-
-        if (enrolledOrgs != null) {
-            for (EnrolledOrganizationConfig item:enrolledOrgs) {
-
-                registerOrganizationEnroller(item);                   
-            }            
-        }
-
-
-        log.debug("Initializer watchers for every app already enrolled (except if handle by another instance of "
-                + "autosleep)");
+        orgRepository.findAll().forEach(this::registerOrganizationEnroller);        
 
         bindingRepository.findAllByResourceType(Application).forEach(applicationBinding -> {
             SpaceEnrollerConfig spaceEnrollerConfig =
