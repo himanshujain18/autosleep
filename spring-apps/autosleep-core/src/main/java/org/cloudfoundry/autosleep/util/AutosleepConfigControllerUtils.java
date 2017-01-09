@@ -71,32 +71,27 @@ public class AutosleepConfigControllerUtils {
 
     public void updateOrganization(EnrolledOrganizationConfig orgInfo) {
 
-        // orgEnroller ;
         try {             
-            OrganizationEnroller orgEnroller =  
-                    workerManager.getOrganizationObjects().get(orgInfo.getOrganizationId());                
-            orgEnroller.callReschedule(orgInfo);
+            workerManager.getOrganizationObjects().get(orgInfo.getOrganizationId()).callReschedule(orgInfo);
         } catch (RuntimeException re) {
-            log.error("Error is : " + re.getMessage());
+            log.error("Updating organization " + orgInfo.getOrganizationId() + " failed. Error: " + re.getMessage());
         }
 
     }
 
     public void stopOrgEnrollerOnDelete(String organizationId) {
 
-       // OrganizationEnroller orgEnroller ;
         try {             
-            OrganizationEnroller orgEnroller =  workerManager.getOrganizationObjects().get(organizationId);                
-            orgEnroller.killTask();
+            workerManager.getOrganizationObjects().get(organizationId).killTask();
         } catch (RuntimeException re) {
-            log.error("Error is : " + re.getMessage());
+            log.error("Orgnization poller for organizationId " + organizationId 
+                    + "failed. Error: " + re.getMessage());
         }
     }
 
 
     public void registerOrganization(EnrolledOrganizationConfig orgInfo) {
 
-       // OrganizationEnroller orgEnroller ;  
         try {
             OrganizationEnroller orgEnroller = OrganizationEnroller.builder()
                     .autoServiceInstanceRepository(autoServiceInstanceRepository)
@@ -114,38 +109,36 @@ public class AutosleepConfigControllerUtils {
             workerManager.setOrganizationObjects(orgInfo.getOrganizationId(), orgEnroller);  
             orgEnroller.startNow();   
         } catch (RuntimeException re) {
-            log.error("Error is : " + re.getMessage());
-            re.printStackTrace();       
+            log.error("Registering organization " + orgInfo.getOrganizationId() 
+            + " failed. Error: " + re.getMessage());
+
         }
     }
 
-    /*
-    public void deleteServiceInstances(List<SpaceEnrollerConfig> serviceInstances) {
-
-        for (SpaceEnrollerConfig serviceInstance : serviceInstances) {                     
-            try {
-                deleteServiceInstance(serviceInstance.getId());
-            } catch (CloudFoundryException ce) {
-                log.error(" Service Instance " + serviceInstance + " cannot be deleted " + ce.getMessage());
-            }
-        }
-    }
-*/
-    public void deleteServiceInstance(String instanceId) throws CloudFoundryException {
+    public void deleteServiceInstance(String instanceId) {
 
         try {
-            List<Binding> serviceInstanceBindings = 
-                    bindingRepository.findByServiceInstanceId(instanceId);
-
-            if (serviceInstanceBindings.size() != 0) {
-                for (Binding item : serviceInstanceBindings) {
-                    cloudFoundryApi.deleteServiceInstanceBinding(item.getServiceBindingId());
-                }
-            }
+            deleteServiceInstanceBinding(instanceId);
             cloudFoundryApi.deleteServiceInstance(instanceId);
             autoServiceInstanceRepository.delete(instanceId);
         } catch (CloudFoundryException ce) {         
             log.error("Service Instance " + instanceId + " cannot be deleted. Error: " + ce.getMessage());
         }
+    }
+
+    public void deleteServiceInstanceBinding(String instanceId) {
+
+        List<Binding> serviceInstanceBindings = 
+                bindingRepository.findByServiceInstanceId(instanceId);
+        serviceInstanceBindings.forEach(Binding-> 
+        { 
+            try
+            {                        
+                cloudFoundryApi.deleteServiceInstanceBinding(Binding.getServiceBindingId());
+            } catch(CloudFoundryException ce){ 
+                log.error("ServiceBinding " + Binding.getServiceBindingId() 
+                + " cannot be deleted. Error: " + ce.getMessage());
+            }
+        });
     }
 }
