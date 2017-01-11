@@ -1,8 +1,6 @@
 package org.cloudfoundry.autosleep.test;
 
-import static org.junit.Assert.assertEquals;    
-import static org.junit.Assert.assertNotEquals;
-
+import static org.junit.Assert.assertEquals;      
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -24,8 +22,6 @@ import org.cloudfoundry.client.v2.applications.CreateApplicationResponse;
 import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsResponse;
-import org.cloudfoundry.client.v2.applications.ListApplicationsRequest;
-import org.cloudfoundry.client.v2.applications.ListApplicationsResponse;
 import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
 import org.cloudfoundry.client.v2.applications.UploadApplicationRequest;
 import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
@@ -37,6 +33,11 @@ import org.cloudfoundry.client.v2.routes.AssociateRouteApplicationRequest;
 import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
 import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
 import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
+import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
+import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerResponse;
+import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
+import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersRequest;
+import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersResponse;
 import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsResponse;
 import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstancesRequest;
@@ -55,13 +56,13 @@ import org.cloudfoundry.client.v2.spaces.CreateSpaceResponse;
 import org.cloudfoundry.client.v2.spaces.DeleteSpaceRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpacesResponse;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.cloudfoundry.autosleep.config.CloudfoundryClientBuilder;
 import org.cloudfoundry.client.CloudFoundryClient;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import cucumber.api.java.After;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Given;
@@ -72,15 +73,16 @@ public class StepDefinitions {
 
     private static final Logger log = LoggerFactory.getLogger(StepDefinitions.class);
 
-    private static String autosleepName;
     private static String autosleepUrl;
+    private static String domainName;
     private static String securityUsername;
     private static String securityUserPassword;
-    private static String serviceName;
+    private static String serviceBrokerName;
+    private static String cfUsername;
+    private static String cfUserPassword;
     private static String[] organizationName;
     private static String[] organizationId;
     private static String[][] spaceId;
-    private static String tempOrgId;
     private static String[][] testAppId;
     private static String routeId[][];
 
@@ -88,6 +90,7 @@ public class StepDefinitions {
     private static String[] result;
     private static int instanceCount;
     private static String[] planVisibilityGuid;
+    private static String serviceBrokerId;
 
     private static InputStream inputStream;
 
@@ -114,13 +117,15 @@ public class StepDefinitions {
                 throw new FileNotFoundException("property file " + fileName + " not found");
             }
 
-            autosleepName = prop.getProperty("autosleepAppName");
             autosleepUrl  = prop.getProperty("autosleepAppUrl");
+            domainName = prop.getProperty("domain");
             securityUsername  = prop.getProperty("securityUsername");
             securityUserPassword  = prop.getProperty("securityUserPassword");
-            serviceName = prop.getProperty("serviceName");
+            cfUsername = prop.getProperty("email");
+            cfUserPassword = prop.getProperty("password");
+            serviceBrokerName = prop.getProperty("serviceBrokerName");
             organizationName  = prop.getProperty("organizationName").split(",");
-
+            
             if (organizationId == null) {
                 organizationId  = new String[organizationName.length];
             }
@@ -168,13 +173,13 @@ public class StepDefinitions {
         }
     }
 
-    public String getServiceId() throws CloudFoundryException {
+    public static String getServiceId() throws CloudFoundryException {
         ListServicesResponse response;
         String serviceId = null;
 
         try {
-            ListServicesRequest request = ListServicesRequest.builder().label(serviceName).build();         
-            response = cfclient.services().list(request).get();           
+            ListServicesRequest request = ListServicesRequest.builder().label(getServiceName()).build();         
+            response = cfclient.services().list(request).get();        
             List<ServiceResource> serviceResources = response.getResources();
 
             if (serviceResources.size() != 0) {
@@ -186,7 +191,7 @@ public class StepDefinitions {
         return serviceId;
     }
 
-    public String getServicePlanId(String serviceId) throws CloudFoundryException {
+    public static String getServicePlanId(String serviceId) throws CloudFoundryException {
         String servicePlanId = null;   
         try {
             if (serviceId != null) {
@@ -207,160 +212,90 @@ public class StepDefinitions {
         }
         return servicePlanId;
     }
-
-    @Given("^a cloud foundry instance with an unenrolled organization which have service instance in standard mode$")
-    public void a_cloud_foundry_instance_with_an_unenrolled_organization_with_service_instances_in_standard_mode() 
-            throws Throwable {
-        log.info("a cloud foundry instance with autosleep service in standard mode is available");
-    }
-
-    @Given("^a cloud foundry instance with an unenrolled organization which have service instance in transitive mode$")
-    public void a_cloud_foundry_instance_with_an_unenrolled_organization_with_service_instances_in_transitive_mode() 
-            throws Throwable {
-        log.info("a cloud foundry instance with autosleep service in transitive mode is available");
-    }
-
-    @Given("^a cloud foundry instance with an unenrolled organization which have service instance in forced mode$")
-    public void a_cloud_foundry_instance_with_an_unenrolled_organization_with_service_instances_in_forced_mode() 
-            throws Throwable {
-        log.info("a cloud foundry instance with autosleep service in forced mode is available");
-    }
-
-    @When("^organization deregister runs$")
-    public void organization_deregister_runs() throws Throwable {
-
-        ListApplicationsResponse response = cfclient.applicationsV2()
-                .list(ListApplicationsRequest.builder()
-                        .name(autosleepName)
-                        .build())
-                .get();
-
-        String appId = response.getResources().get(0).getMetadata().getId();
-
-        cfclient.applicationsV2().update(UpdateApplicationRequest.builder()
-                .applicationId(appId)
-                .state("STOPPED")
-                .build())
-        .get();
-
-        cfclient.applicationsV2().update(UpdateApplicationRequest.builder()
-                .applicationId(appId)
-                .state("STARTED")
-                .build())
-        .get();
-    }
-
-    @Then("^service instances should be deleted$")
-    public static void service_instances_should_be_deleted() throws Throwable {
-
-        try {
-            ListApplicationsResponse appResponse = cfclient.applicationsV2()
-                    .list(ListApplicationsRequest.builder()
-                            .name(autosleepName)
-                            .build())
-                    .get();
-
-            String appId = appResponse.getResources().get(0).getMetadata().getId();
-
-            ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
-                    .applicationId(appId)
-                    .build();
-            String state = "";
-
-            do {
-                ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                        .statistics(stats)
-                        .get();
-                state = statsResponse.get("0").getState();
-            } while (state.compareTo("DOWN") == 0);
-
-            if (state.compareTo("RUNNING") == 0) {
-                Thread.currentThread();
-                Thread.sleep(30000);
-            } else {
-                throw new CloudFoundryException(524, "Error restarting application: Start app timeout", "290006");
-            }
-
-            ListServiceInstancesResponse response = cfclient.serviceInstances()
-                    .list(ListServiceInstancesRequest.builder()
-                            .organizationId(tempOrgId)
-                            .build())
-                    .get();
-            instanceCount = response.getTotalResults();
-
-            assertEquals(0, instanceCount);
-        } catch (CloudFoundryException re) {
-            log.error("Application failed to start : " + re);
-        }
-
-    }
-
-    @Then("^service instances are not deleted$")
-    public static void service_instances_are_not_deleted() throws Throwable {
-        try {
-            ListApplicationsResponse appResponse = cfclient.applicationsV2()
-                    .list(ListApplicationsRequest.builder()
-                            .name(autosleepName)
-                            .build())
-                    .get();
-
-            String appId = appResponse.getResources().get(0).getMetadata().getId();
-
-            ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
-                    .applicationId(appId)
-                    .build();
-            String state = "";
-
-            do {
-                ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                        .statistics(stats)
-                        .get();
-                state = statsResponse.get("0").getState();
-            } while (state.compareTo("DOWN") == 0);
-
-            if (state.compareTo("RUNNING") == 0) {
-                Thread.currentThread();
-                Thread.sleep(30000);
-            } else {
-                throw new CloudFoundryException(524, "Error restarting application: Start app timeout", "290006");
-            }
-
-            ListServiceInstancesResponse response = cfclient.serviceInstances()
-                    .list(ListServiceInstancesRequest.builder()
-                            .organizationId(tempOrgId)
-                            .build())
-                    .get();
-            instanceCount = response.getTotalResults();
-
-            assertNotEquals(0, instanceCount);
-        } catch (CloudFoundryException re) {
-            log.error("Application failed to start : " + re);
-        }
-    }
     
+    public static String getServiceName() {
+        log.info("Fetching catalog");
+
+        String auth = securityUsername + ":" + securityUserPassword;
+        
+        HttpHeaders header = new HttpHeaders();
+        header.add("Authorization", "Basic " + java.util.Base64.getEncoder()
+                .encodeToString(auth.getBytes(StandardCharsets.UTF_8)));
+        header.add("Content-Type", "application/json");
+        
+        String serviceName = "";
+        
+        try {
+            RestTemplate rest = new RestTemplate();
+            HttpEntity<String> requestEntity = new HttpEntity<String>(header);
+            ResponseEntity<String> response = rest.exchange(autosleepUrl + "/v2/catalog",
+                    HttpMethod.GET, requestEntity, String.class);
+
+            JSONObject jsonResponse = new JSONObject(response.getBody());
+            JSONArray jsonArray = jsonResponse.getJSONArray("services");
+            
+            JSONObject element = (JSONObject) jsonArray.get(0);
+            
+            serviceName = element.getString("name");
+        } catch (HttpClientErrorException e) {
+            log.error("Autosleep service not available");
+        } catch (Exception e) {
+            log.error("Error Fetching Catalog : " + e);
+        }
+        
+        return serviceName;
+    }
+        
     @Given("^a cloud foundry instance with autosleep application deployed on it$")
     public void given_state() {
         log.info("Autosleep application is deployed on Cloud Foundry instance");
     }
     
     @Before({"@registerNewOrganization"})
-    public void before_scenario_register_new_organization() {
+    public static void before_scenario_register_new_organization() {
         log.info("Before scenario register new organization");
+        
+        ListServiceBrokersRequest brokerRequest = ListServiceBrokersRequest.builder()
+                .name(serviceBrokerName)
+                .build();
+        
+        ListServiceBrokersResponse brokerResponse = cfclient.serviceBrokers()
+                .list(brokerRequest)
+                .get();
+        
+        String serviceId = "";
+        if (brokerResponse.getTotalResults() == 0) {
+            log.error("Service broker with name : " + serviceBrokerName + " does not exists");
+            log.info("creating service broker");
+            
+            CreateServiceBrokerRequest request = CreateServiceBrokerRequest.builder()
+                    .brokerUrl(autosleepUrl)
+                    .name("autosleepBroker" + System.nanoTime())
+                    .authenticationUsername(cfUsername)
+                    .authenticationPassword(cfUserPassword)
+                    .build();
+            
+            CreateServiceBrokerResponse response = cfclient.serviceBrokers()
+                    .create(request)
+                    .get();
+            serviceBrokerId = response.getMetadata().getId();
+        }
         
         for (int index = 0; index < organizationId.length; index++) {
             if (organizationId[index] != null) {
                 ListDomainsResponse dom = cfclient.domains()
                         .list(ListDomainsRequest.builder()
-                                .name("bosh-lite.com")
+                                .name(domainName)
                                 .build())
                         .get();
 
                 String domainId = dom.getResources().get(0).getMetadata().getId();
                 
-                String serviceId = getServiceId();
+                serviceId = getServiceId();
+                
                 if (serviceId != null) {
                     String servicePlanId = getServicePlanId(serviceId);
-
+                    
                     CreateServicePlanVisibilityResponse visibilityResponse = cfclient.servicePlanVisibilities()
                             .create(CreateServicePlanVisibilityRequest.builder()
                                     .servicePlanId(servicePlanId)
@@ -393,7 +328,7 @@ public class StepDefinitions {
 
                         cfclient.applicationsV2()
                         .upload(UploadApplicationRequest.builder()
-                                .application(getClass().getClassLoader().getResourceAsStream("Test-App.war"))
+                                .application(StepDefinitions.class.getClassLoader().getResourceAsStream("Test-App.war"))
                                 .applicationId(testAppId[index][0])
                                 .build())
                             .get();
@@ -609,7 +544,7 @@ public class StepDefinitions {
             if (organizationId[index] != null) {
                 ListDomainsResponse dom = cfclient.domains()
                         .list(ListDomainsRequest.builder()
-                                .name("bosh-lite.com")
+                                .name(domainName)
                                 .build())
                         .get();
 
@@ -781,6 +716,8 @@ public class StepDefinitions {
 
                 status[index] = response.getStatusCode().value();
 
+                Thread.currentThread();
+                Thread.sleep(10000);
             } catch (HttpClientErrorException e) {
                 status[index] = 404;
             } catch (Exception e) {
@@ -790,7 +727,7 @@ public class StepDefinitions {
     }
     
     @Then("^service instances are deleted$")
-    public static void service_instances_are_deleted() {
+    public static void service_instances_are_deleted() throws Throwable {
         
         log.info("Check for service instances after unenrolling");
         
@@ -850,6 +787,13 @@ public class StepDefinitions {
                         .build())
                 .get();
             }
+        }
+        
+        if (serviceBrokerId != null) {
+            cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
+                    .serviceBrokerId(serviceBrokerId)
+                    .build())
+            .get();
         }
     }
 }
