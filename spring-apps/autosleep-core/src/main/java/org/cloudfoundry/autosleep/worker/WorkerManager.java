@@ -19,7 +19,7 @@
 
 package org.cloudfoundry.autosleep.worker;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; 
 import org.cloudfoundry.autosleep.access.dao.repositories.ProxyMapEntryRepository;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig; 
@@ -39,7 +39,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,10 +60,10 @@ public class WorkerManager implements WorkerManagerService {
 
     @Autowired
     private BindingRepository bindingRepository;
-
+    
     @Autowired
     private Clock clock;
-
+    
     @Autowired
     private CloudFoundryApiService cloudFoundryApi;
 
@@ -92,7 +91,19 @@ public class WorkerManager implements WorkerManagerService {
                 + "instance of autosleep)");
         this.organizationObjects = new HashMap<String,OrganizationEnroller>();
 
-        orgRepository.findAll().forEach(this::registerOrganizationEnroller);        
+
+        List<EnrolledOrganizationConfig> enrolledOrgs = orgRepository.findAll();   
+        
+        if (enrolledOrgs != null) {
+            for (EnrolledOrganizationConfig item:enrolledOrgs) {
+
+                registerOrganizationEnroller(item);                   
+            }            
+        }
+
+
+        log.debug("Initializer watchers for every app already enrolled (except if handle by another instance of "
+                + "autosleep)");
 
         bindingRepository.findAllByResourceType(Application).forEach(applicationBinding -> {
             SpaceEnrollerConfig spaceEnrollerConfig =
@@ -159,8 +170,6 @@ public class WorkerManager implements WorkerManagerService {
 
     @Override
     public void registerSpaceEnroller(SpaceEnrollerConfig service) {
-        System.out.println("Register thread for new service Instance");
-
         SpaceEnroller spaceEnroller = SpaceEnroller.builder()
                 .clock(clock)
                 .period(service.getIdleDuration())

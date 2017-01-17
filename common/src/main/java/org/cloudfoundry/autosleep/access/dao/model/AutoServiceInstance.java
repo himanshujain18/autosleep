@@ -22,14 +22,14 @@ import javax.persistence.Id;
 @EqualsAndHashCode(of = {"serviceInstanceId"})
 @Entity
 public class AutoServiceInstance {
-    
+
     @Id
     @JsonProperty
     private String serviceInstanceId;
-    
+
     @JsonProperty
     private String spaceId;
-    
+
     @JsonProperty
     private String organizationId;
 

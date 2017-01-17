@@ -20,14 +20,14 @@ import lombok.ToString;
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @ToString
 public class EnrolledSpaceConfig {
-    
+
     private String spaceId;
-    
+
     private String organizationId;
-    
+
     private Duration idleDuration;
-    
+
     private Config.ServiceInstanceParameters.Enrollment autoEnrollment;
-    
+
     private Pattern excludeFromAutoEnrollment;
 }

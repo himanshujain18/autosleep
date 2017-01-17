@@ -1,14 +1,12 @@
 
 package org.cloudfoundry.autosleep.controller;
 
-import lombok.extern.slf4j.Slf4j; 
+import lombok.extern.slf4j.Slf4j;  
 
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryApiService;
 import org.cloudfoundry.autosleep.access.cloudfoundry.CloudFoundryException;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
-import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.dao.repositories.EnrolledOrganizationConfigRepository;
-import org.cloudfoundry.autosleep.access.dao.repositories.SpaceEnrollerConfigRepository;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.util.AutosleepConfigControllerRequest;
 import org.cloudfoundry.autosleep.util.AutosleepConfigControllerResponse;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Controller
@@ -38,9 +35,6 @@ public class AutosleepConfigController {
 
     @Autowired
     private EnrolledOrganizationConfigRepository orgRepository;
-
-    @Autowired
-    private SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
 
     @Autowired
     private AutosleepConfigControllerUtils utils;
@@ -53,8 +47,8 @@ public class AutosleepConfigController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<ArrayList<AutosleepConfigControllerResponse>> 
-    enrollOrganization(@RequestBody AutosleepConfigControllerRequest request, @PathVariable("organizationId") 
-    String organizationId) throws CloudFoundryException {
+            enrollOrganization(@RequestBody AutosleepConfigControllerRequest request, @PathVariable("organizationId") 
+            String organizationId) throws CloudFoundryException {
 
         EnrolledOrganizationConfig orgInfo = EnrolledOrganizationConfig.builder().build();
         HttpStatus status = null;
@@ -130,7 +124,7 @@ public class AutosleepConfigController {
     @RequestMapping(value = "enrolled-orgs/{organizationId}", 
             method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AutosleepConfigControllerRequest> 
-    fetchEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
+            fetchEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
             throws CloudFoundryException {
 
         AutosleepConfigControllerRequest responseObject = null; 
@@ -142,10 +136,10 @@ public class AutosleepConfigController {
             if (orgInfo != null) {
                 responseObject = new AutosleepConfigControllerRequest();
                 responseObject.setOrganizationId(organizationId);
-                if(orgInfo.getIdleDuration() != null) {
+                if (orgInfo.getIdleDuration() != null) {
                     responseObject.setIdleDuration(orgInfo.getIdleDuration().toString());
                 }
-                log.info("Information for organizationId : " + organizationId + " is retrieved");                
+                log.info("Information for organizationId : " + organizationId + " is retrieved");
                 status = HttpStatus.OK;
             } else {
                 status = HttpStatus.NOT_FOUND;            
@@ -172,7 +166,7 @@ public class AutosleepConfigController {
     @RequestMapping(value = "enrolled-orgs/{organizationId}", 
             method = RequestMethod.DELETE)
     public ResponseEntity<Void>
-    deleteEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
+            deleteEnrolledOrganization(@PathVariable("organizationId") String organizationId) 
             throws CloudFoundryException {
         EnrolledOrganizationConfig orgInfo = null;
         HttpStatus status = null;
@@ -182,9 +176,7 @@ public class AutosleepConfigController {
             if (orgInfo != null) {                                 
                 status = HttpStatus.OK;                   
                 utils.stopOrgEnrollerOnDelete(organizationId);
-                List<SpaceEnrollerConfig> serviceInstances = 
-                        spaceEnrollerConfigRepository.listByOrganizationId(organizationId);
-                serviceInstances.forEach(serviceInstance-> utils.deleteServiceInstance(serviceInstance.getId()));
+                utils.deleteServiceInstances(organizationId);
                 orgRepository.delete(orgInfo);
                 log.info("Organization Id : "  + organizationId  + " is unenrolled from autosleep");
             } else {

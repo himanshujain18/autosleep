@@ -28,13 +28,13 @@ import lombok.ToString;
 @Entity
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EnrolledOrganizationConfig {
-    
+
     @Id
     @JsonProperty
     private String organizationId;
-    
+
     @JsonProperty(value = "idle-duration")
     @Lob
     private Duration idleDuration;   
-    
+
 }

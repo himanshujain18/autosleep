@@ -20,7 +20,7 @@
 package org.cloudfoundry.autosleep.util;
 
 
-import java.util.function.Function;
+import java.util.function.Function; 
 
 import static org.junit.Assert.fail;
 

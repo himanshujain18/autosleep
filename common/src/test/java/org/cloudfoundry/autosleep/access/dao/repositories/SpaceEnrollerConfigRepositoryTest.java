@@ -25,12 +25,17 @@ import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.util.ApplicationConfiguration;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -39,19 +44,20 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
 public abstract class SpaceEnrollerConfigRepositoryTest extends CrudRepositoryTest<SpaceEnrollerConfig> {
 
-    private static final String ORG_TEST = "orgTest";
+    private static final String ORGANIZATION_ID = UUID.randomUUID().toString();;
 
     private static final String SERVICE_DEFINITION_ID = "TESTS";
 
     private static final String SERVICE_PLAN_ID = "PLAN";
 
-    private static final String SPACE_TEST = "spaceTest";
+    private static final String SPACE_ID = UUID.randomUUID().toString();;
 
     private Duration duration = Duration.ofMinutes(15);
 
@@ -66,10 +72,10 @@ public abstract class SpaceEnrollerConfigRepositoryTest extends CrudRepositoryTe
                 .excludeFromAutoEnrollment(excludePattern)
                 .id(id)
                 .idleDuration(duration)
-                .organizationId(ORG_TEST)
+                .organizationId(ORGANIZATION_ID)
                 .planId(SERVICE_PLAN_ID)
                 .serviceDefinitionId(SERVICE_DEFINITION_ID)
-                .spaceId(SPACE_TEST)
+                .spaceId(SPACE_ID)
                 .build();
     }
 
@@ -97,6 +103,47 @@ public abstract class SpaceEnrollerConfigRepositoryTest extends CrudRepositoryTe
     public void setAndClearDao() {
         setDao(spaceEnrollerConfigRepository);
         spaceEnrollerConfigRepository.deleteAll();
+    }
+
+
+    @Test
+    public void test_find_by_organization_id_existing() {        
+
+        List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
+        ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
+        int count = spaceEnrollerConfigRepository.listByOrganizationId(ORGANIZATION_ID).size();
+        assertTrue("Retrieving all elements should return the same quantity", count == ids.size());        
+
+    }
+
+    @Test
+    public void test_find_by_organization_id_not_existing() {        
+
+        List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
+        ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
+        int count = spaceEnrollerConfigRepository.listByOrganizationId("false_org_id").size();
+        assertTrue("Retrieving all elements should return the same quantity", count == 0);        
+
+    }
+
+    @Test
+    public void test_find_by_ids_existing() {        
+
+        List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
+        ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
+        int count = spaceEnrollerConfigRepository.listByIds(Arrays.asList("serviceInstance1", "serviceInstance2")).size();
+        assertTrue("Retrieving all elements should return the same quantity", count == ids.size());        
+
+    }
+
+    @Test
+    public void test_find_by_ids_not_existing() {        
+
+        List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
+        ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
+        int count = spaceEnrollerConfigRepository.listByIds(Collections.singletonList("false_serviceInstance")).size();
+        assertTrue("Retrieving all elements should return the same quantity", count == 0);        
+
     }
 
 }

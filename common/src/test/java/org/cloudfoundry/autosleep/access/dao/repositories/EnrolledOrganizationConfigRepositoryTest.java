@@ -21,15 +21,14 @@ import java.time.Duration;
 
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
-//@ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
-//Commented for test
+@ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
 public abstract class EnrolledOrganizationConfigRepositoryTest extends CrudRepositoryTest<EnrolledOrganizationConfig> {
 
     private static final Duration duration = Duration.ofMinutes(2);
-    
+
     @Autowired
     private EnrolledOrganizationConfigRepository enrolledOrganizationConfigRepository;
-    
+
     @Override
     protected EnrolledOrganizationConfig build(String orgId) {
         return EnrolledOrganizationConfig.builder()
@@ -37,14 +36,14 @@ public abstract class EnrolledOrganizationConfigRepositoryTest extends CrudRepos
                 .idleDuration(duration)
                 .build();                
     }
-    
+
     @Override
     protected void compareReloaded(EnrolledOrganizationConfig original, EnrolledOrganizationConfig reloaded) {
         assertEquals(reloaded.getOrganizationId(), original.getOrganizationId());
         assertEquals(reloaded.getIdleDuration(), original.getIdleDuration());  
         assertThat("Two objects should be equal", reloaded, is(equalTo(original)));
     }
-    
+
     /**
      * Init DAO with test data.
      */

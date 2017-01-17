@@ -19,7 +19,7 @@
 
 package org.cloudfoundry.autosleep.worker;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; 
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.Binding;
@@ -45,7 +45,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -54,6 +56,7 @@ import static org.cloudfoundry.autosleep.access.dao.model.Binding.ResourceType.A
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -106,6 +109,8 @@ public class WorkerManagerTest {
     private WorkerManager spyWatcher;
 
     private List<String> unattachedBinding = Arrays.asList("unattached01", "unattached02");
+    
+    private Map<String,OrganizationEnroller> mockOrgObjects = new HashMap<>();
 
     @Before
     public void populateDb() throws CloudFoundryException {
@@ -122,7 +127,13 @@ public class WorkerManagerTest {
         when(mockBindingRepo.findAllByResourceType(Application)).thenReturn(storedBindings);
 
         //init mock orgRepo
-        List<EnrolledOrganizationConfig> fakeList = Arrays.asList(mock(EnrolledOrganizationConfig.class));        
+        EnrolledOrganizationConfig mockOrgId = mock(EnrolledOrganizationConfig.class);
+        when(mockOrgId.getIdleDuration()).thenReturn(INTERVAL);
+        when(mockOrgRepo.findOne(any())).thenReturn(mockOrgId);
+        
+        List<EnrolledOrganizationConfig> fakeList = organizationIds.stream()  
+                .map(BeanGenerator::createEnrolledOrganizationConfig)
+                .collect(Collectors.toList());
         when(mockOrgRepo.findAll()).thenReturn(fakeList);
         
         //init mock serviceRepo
@@ -148,9 +159,12 @@ public class WorkerManagerTest {
     @Test
     public void testInit() {
         spyWatcher.init();
+        mockOrgObjects = new HashMap<String,OrganizationEnroller>();
         verify(spyWatcher, times(unattachedBinding.size()))
                 .registerApplicationStopper(any(SpaceEnrollerConfig.class), anyString(), anyString());
         verify(spyWatcher, times(serviceIds.size())).registerSpaceEnroller(any(SpaceEnrollerConfig.class));
+        verify(spyWatcher, times(organizationIds.size()))
+                .registerOrganizationEnroller(any(EnrolledOrganizationConfig.class));
     }
 
     @Test
@@ -160,7 +174,18 @@ public class WorkerManagerTest {
         verify(clock).scheduleTask(eq(serviceId), eq(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK),
                 any(SpaceEnroller.class));
     }
-
+    
+    @Test
+    public void test_organization_enrollment_task_is_scheduled() throws Exception {
+        String orgId = "orgId";
+        
+        doNothing().when(spyWatcher).setOrganizationObjects(anyString(), any(OrganizationEnroller.class));
+        spyWatcher.registerOrganizationEnroller(BeanGenerator.createEnrolledOrganizationConfig(orgId));
+        verify(spyWatcher).setOrganizationObjects(anyString(), any(OrganizationEnroller.class));
+        verify(clock).scheduleTask(eq(orgId), eq(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK),
+                any(OrganizationEnroller.class));
+    }
+    
     @Test
     public void test_task_of_stop_is_scheduled() {
         SpaceEnrollerConfig config = BeanGenerator.createServiceInstance();
@@ -168,5 +193,5 @@ public class WorkerManagerTest {
         verify(clock).scheduleTask(anyString(), eq(Duration.ofSeconds(0)),
                 any(ApplicationStopper.class));
     }
-
+    
 }
