@@ -14,7 +14,7 @@ Scenario: Enroll new organization with autosleep and create service instances in
 Scenario: Successfully retrieve the details of an enrolled organization
     Given a cloud foundry instance with autosleep application deployed on it
     When fetching the organizations enrollment details
-    Then should return the organizations details as "{"organizationId":" "<orgid>" ","idle-duration":"PT2M"}"
+    Then should return the organizations details as "{"organizationId":" "<orgid>" ","idle-duration":"PT6M"}"
     And the response status code is 200
     
 @updateAlreadyEnrolledOrganization

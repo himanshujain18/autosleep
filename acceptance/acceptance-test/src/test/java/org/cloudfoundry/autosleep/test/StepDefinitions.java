@@ -84,7 +84,7 @@ public class StepDefinitions {
     private static String[] organizationId;
     private static String[][] spaceId;
     private static String[][] testAppId;
-    private static String routeId[][];
+    private static String[][] routeId;
 
     private static int[] status;
     private static String[] result;
@@ -270,7 +270,7 @@ public class StepDefinitions {
             
             CreateServiceBrokerRequest request = CreateServiceBrokerRequest.builder()
                     .brokerUrl(autosleepUrl)
-                    .name("autosleepBroker" + System.nanoTime())
+                    .name(serviceBrokerName)
                     .authenticationUsername(cfUsername)
                     .authenticationPassword(cfUserPassword)
                     .build();
@@ -279,6 +279,11 @@ public class StepDefinitions {
                     .create(request)
                     .get();
             serviceBrokerId = response.getMetadata().getId();
+        } else {
+            String url = brokerResponse.getResources().get(0).getEntity().getBrokerUrl();
+            if (url.compareTo(autosleepUrl) != 0) {
+                throw new CloudFoundryException(400, "Invalid broker url", "Bad Request");
+            }
         }
         
         for (int index = 0; index < organizationId.length; index++) {
@@ -388,7 +393,7 @@ public class StepDefinitions {
 
         String auth = securityUsername + ":" + securityUserPassword;
 
-        String jsonParam = "{\"idle-duration\":\"PT2M\"}";
+        String jsonParam = "{\"idle-duration\":\"PT6M\"}";
 
         HttpHeaders header = new HttpHeaders();
         header.add("Authorization", "Basic " + java.util.Base64.getEncoder()
@@ -417,7 +422,7 @@ public class StepDefinitions {
         
         for (int index = 0; index < organizationId.length; index++) {
             Thread.currentThread();
-            Thread.sleep(25000);
+            Thread.sleep(30000);
             if (organizationId[index] != null) {
                 ListServiceInstancesResponse response = cfclient.serviceInstances()
                         .list(ListServiceInstancesRequest.builder()
@@ -636,7 +641,7 @@ public class StepDefinitions {
 
         String auth = securityUsername + ":" + securityUserPassword;
 
-        String jsonParam = "{\"idle-duration\":\"PT1M30S\"}";
+        String jsonParam = "{\"idle-duration\":\"PT4M\"}";
 
         HttpHeaders header = new HttpHeaders();
         header.add("Authorization", "Basic " + java.util.Base64.getEncoder()
@@ -664,7 +669,7 @@ public class StepDefinitions {
     public static void service_instances_are_updated_in_all_spaces_of_the_organization() throws Throwable {
         
         Thread.currentThread();
-        Thread.sleep(25000);
+        Thread.sleep(30000);
         
         for (int index = 0; index < organizationId.length; index++) {
             if (organizationId[index] != null) {
@@ -717,7 +722,7 @@ public class StepDefinitions {
                 status[index] = response.getStatusCode().value();
 
                 Thread.currentThread();
-                Thread.sleep(10000);
+                Thread.sleep(20000);
             } catch (HttpClientErrorException e) {
                 status[index] = 404;
             } catch (Exception e) {
