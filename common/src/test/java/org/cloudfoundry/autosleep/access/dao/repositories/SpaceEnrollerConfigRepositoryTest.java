@@ -51,13 +51,13 @@ import static org.junit.Assert.assertTrue;
 @ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
 public abstract class SpaceEnrollerConfigRepositoryTest extends CrudRepositoryTest<SpaceEnrollerConfig> {
 
-    private static final String ORGANIZATION_ID = UUID.randomUUID().toString();;
+    private static final String ORGANIZATION_ID = UUID.randomUUID().toString();
 
     private static final String SERVICE_DEFINITION_ID = "TESTS";
 
     private static final String SERVICE_PLAN_ID = "PLAN";
 
-    private static final String SPACE_ID = UUID.randomUUID().toString();;
+    private static final String SPACE_ID = UUID.randomUUID().toString();
 
     private Duration duration = Duration.ofMinutes(15);
 
@@ -104,46 +104,47 @@ public abstract class SpaceEnrollerConfigRepositoryTest extends CrudRepositoryTe
         setDao(spaceEnrollerConfigRepository);
         spaceEnrollerConfigRepository.deleteAll();
     }
-
-
+    
+    
     @Test
     public void test_find_by_organization_id_existing() {        
-
+ 
         List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
         ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
         int count = spaceEnrollerConfigRepository.listByOrganizationId(ORGANIZATION_ID).size();
         assertTrue("Retrieving all elements should return the same quantity", count == ids.size());        
-
+        
     }
-
+    
     @Test
     public void test_find_by_organization_id_not_existing() {        
-
+ 
         List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
         ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
         int count = spaceEnrollerConfigRepository.listByOrganizationId("false_org_id").size();
         assertTrue("Retrieving all elements should return the same quantity", count == 0);        
-
+        
     }
-
+    
     @Test
     public void test_find_by_ids_existing() {        
-
+ 
         List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
         ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
-        int count = spaceEnrollerConfigRepository.listByIds(Arrays.asList("serviceInstance1", "serviceInstance2")).size();
+        int count = spaceEnrollerConfigRepository
+                .listByIds(Arrays.asList("serviceInstance1", "serviceInstance2")).size();
         assertTrue("Retrieving all elements should return the same quantity", count == ids.size());        
-
+        
     }
-
+    
     @Test
     public void test_find_by_ids_not_existing() {        
-
+ 
         List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
         ids.forEach(id -> spaceEnrollerConfigRepository.save(build(id)));
         int count = spaceEnrollerConfigRepository.listByIds(Collections.singletonList("false_serviceInstance")).size();
         assertTrue("Retrieving all elements should return the same quantity", count == 0);        
-
+        
     }
 
 }

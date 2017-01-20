@@ -759,7 +759,7 @@ public class CloudFoundryApiTest {
         when(serviceBindings.delete(any(DeleteServiceBindingRequest.class)))
                 .thenReturn(Mono.error(new RuntimeException("some error")));
         verifyThrown(() -> cloudFoundryApi.deleteServiceInstanceBinding("service-binding-id"),
-        CloudFoundryException.class);
+                CloudFoundryException.class);
     }
     
     @Test
@@ -786,7 +786,7 @@ public class CloudFoundryApiTest {
         when(serviceInstance.delete(any(DeleteServiceInstanceRequest.class)))
                 .thenReturn(Mono.error(new RuntimeException("some error")));
         verifyThrown(() -> cloudFoundryApi.deleteServiceInstance(instanceId),
-        CloudFoundryException.class);
+                CloudFoundryException.class);
     }
     
     @Test
@@ -912,13 +912,14 @@ public class CloudFoundryApiTest {
     @Test
     public void test_createServiceInstance_should_create_instance_for_valid_request()
             throws CloudFoundryException {
-        String serviceId = UUID.randomUUID().toString();
-        String servicePlanId = UUID.randomUUID().toString();
-        String serviceBrokerName = "service-broker";
-        String instanceName = "service-instance";
-        String instanceId = UUID.randomUUID().toString();
-        String spaceId = UUID.randomUUID().toString();
-        Duration interval = Duration.ofMillis(300);
+        
+        final String instanceName = "service-instance";
+        final String instanceId = UUID.randomUUID().toString();
+        final String serviceId = UUID.randomUUID().toString();
+        final String servicePlanId = UUID.randomUUID().toString();
+        final String spaceId = UUID.randomUUID().toString();
+        final Duration interval = Duration.ofMillis(300);
+        final String serviceBrokerName = "service-broker";
         
         EnrolledSpaceConfig serviceInstanceInfo = mock(EnrolledSpaceConfig.class);
         when(serviceInstanceInfo.getSpaceId()).thenReturn(spaceId);
@@ -979,9 +980,9 @@ public class CloudFoundryApiTest {
     @Test
     public void test_createServiceInstance_should_throw_exception_for_any_other_error()
             throws CloudFoundryException {
-        String serviceId = UUID.randomUUID().toString();
-        String servicePlanId = UUID.randomUUID().toString();
-        String serviceBrokerName = "service-broker";
+        final String serviceId = UUID.randomUUID().toString();
+        final String servicePlanId = UUID.randomUUID().toString();
+        final String serviceBrokerName = "service-broker";
         String spaceId = UUID.randomUUID().toString();
         Duration interval = Duration.ofMillis(300);
         

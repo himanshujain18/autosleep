@@ -24,16 +24,17 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
 public abstract class AutoServiceInstanceRepositoryTest extends CrudRepositoryTest<AutoServiceInstance> {
-
+    
     private static final String ORGANIZATION_ID = UUID.randomUUID().toString();
-
+    
     @Autowired
     private AutoServiceInstanceRepository autoServiceInstanceRepository;
-
+    
     @Override
     protected AutoServiceInstance build(String serviceInstanceId) {
         return AutoServiceInstance.builder()
@@ -41,18 +42,18 @@ public abstract class AutoServiceInstanceRepositoryTest extends CrudRepositoryTe
                 .organizationId(ORGANIZATION_ID)
                 .spaceId("spaceId")
                 .build();
-
+                
     }
-
+    
     @Override
     protected void compareReloaded(AutoServiceInstance original, AutoServiceInstance reloaded) {
         assertEquals(reloaded.getServiceInstanceId(), original.getServiceInstanceId());  
         assertEquals(reloaded.getOrganizationId(), original.getOrganizationId());
         assertEquals(reloaded.getSpaceId(), original.getSpaceId());
-
+        
         assertThat("Two objects should be equal", reloaded, is(equalTo(original)));
     }
-
+    
     /**
      * Init DAO with test data.
      */
@@ -63,24 +64,35 @@ public abstract class AutoServiceInstanceRepositoryTest extends CrudRepositoryTe
         autoServiceInstanceRepository.deleteAll();
     }
 
-
+    
     @Test
     public void test_find_by_organization_id_existing() {        
-
+ 
         List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
         ids.forEach(id -> autoServiceInstanceRepository.save(build(id)));
         int count = autoServiceInstanceRepository.findByOrganizationId(ORGANIZATION_ID).size();
         assertTrue("Retrieving all elements should return the same quantity", count == ids.size());        
-
+        
     }
-
+    
     @Test
     public void test_find_by_organization_id_not_existing() {        
-
+ 
         List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
         ids.forEach(id -> autoServiceInstanceRepository.save(build(id)));
         int count = autoServiceInstanceRepository.findByOrganizationId("false_org_id").size();
         assertTrue("Retrieving all elements should return the same quantity", count == 0);        
-
+        
     }
+    
+ /*   
+    @Test
+    public void test_delete_by_organization_id_existing() {        
+ 
+        List<String> ids = Arrays.asList("serviceInstance1", "serviceInstance2");
+        ids.forEach(id -> autoServiceInstanceRepository.save(build(id)));
+        autoServiceInstanceRepository.deleteByOrgId(ORGANIZATION_ID);
+       // assertNull(autoServiceInstanceRepository.findByOrganizationId(ORGANIZATION_ID));        
+    }
+   */ 
 }

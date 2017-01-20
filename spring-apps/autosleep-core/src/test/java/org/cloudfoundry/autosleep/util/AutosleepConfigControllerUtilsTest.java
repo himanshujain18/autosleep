@@ -384,7 +384,9 @@ public class AutosleepConfigControllerUtilsTest {
         when(enrolledOrganizationConfig.getIdleDuration()).thenReturn(Duration.ofMillis(100));
 
         doReturn(false).when(utils)
-                .checkParameters(any(SpaceEnrollerConfig.class),any(EnrolledOrganizationConfig.class)); 
+                .checkParameters(mockSpaceConfig1,enrolledOrganizationConfig); 
+        doReturn(false).when(utils)
+                .checkParameters(mockSpaceConfig2,enrolledOrganizationConfig); 
         doNothing().when(utils).deleteServiceInstance(anyString());
         doNothing().when(utils).createNewServiceInstance(any(EnrolledSpaceConfig.class));
         
@@ -408,10 +410,14 @@ public class AutosleepConfigControllerUtilsTest {
 
         when(enrolledOrganizationConfig.getOrganizationId()).thenReturn(ORGANIZATION_ID);
         when(enrolledOrganizationConfig.getIdleDuration()).thenReturn(Duration.ofMillis(100));
-
+        
         doReturn(false).when(utils)
-                .checkParameters(any(SpaceEnrollerConfig.class),any(EnrolledOrganizationConfig.class)); 
+                .checkParameters(mockSpaceConfig1,enrolledOrganizationConfig); 
+        doReturn(false).when(utils)
+                .checkParameters(mockSpaceConfig2,enrolledOrganizationConfig); 
+
         verifyThrown(() -> utils.updateServiceInstances(mockExistingServiceInstances,
                 mockSpaceIds, enrolledOrganizationConfig), Throwable.class);
     }
+    
 }

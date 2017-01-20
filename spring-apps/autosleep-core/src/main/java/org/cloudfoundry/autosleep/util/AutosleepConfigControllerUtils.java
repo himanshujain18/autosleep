@@ -324,8 +324,7 @@ public class AutosleepConfigControllerUtils {
     public boolean checkParameters(SpaceEnrollerConfig oldInstance, 
             EnrolledOrganizationConfig enrolledOrganizationConfig ) {
         boolean flag = false;   
-        if (oldInstance.getIdleDuration().compareTo(enrolledOrganizationConfig.getIdleDuration()) == 0) {
-            System.out.println("inside check if");
+        if (oldInstance.getIdleDuration().compareTo(enrolledOrganizationConfig.getIdleDuration()) == 0) {         
             flag = true;
         }
         return flag;
