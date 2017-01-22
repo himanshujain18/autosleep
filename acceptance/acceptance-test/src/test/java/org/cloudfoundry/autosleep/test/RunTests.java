@@ -25,7 +25,8 @@ import org.cloudfoundry.autosleep.test.RunTests.SpringProfileCucumber;
 @CucumberOptions(plugin = {"pretty:target/Org-Enrollment-pretty.txt", "html:target/cucumber",
         "json:target/Org-Enrollment-Report.json", "usage:target/Org-Enrollment-usage.json",
         "junit:target/Org-Enrollment-results.xml"},
-        features = {"src/test/java/org/cloudfoundry/autosleep/feature/OrganizationRegistration.feature"})
+        features = {"src/test/java/org/cloudfoundry/autosleep/feature/OrganizationRegistration.feature",
+                "src/test/java/org/cloudfoundry/autosleep/feature/TransitiveMode.feature"})
 public class RunTests {
     
     public static class SpringProfileCucumber extends ExtendedCucumber {
