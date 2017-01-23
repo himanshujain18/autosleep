@@ -239,14 +239,14 @@ public class StepDefinitions {
             serviceName = element.getString("name");
         } catch (HttpClientErrorException e) {
             log.error("Autosleep service not available");
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error Fetching Catalog : " + e);
         }
         
         return serviceName;
     }
         
-    @Given("^a cloud foundry instance with autosleep application deployed on it$")
+    @Given("^a cloud foundry landscape with autosleep application deployed on it$")
     public void given_state() {
         log.info("Autosleep application is deployed on Cloud Foundry instance");
     }
@@ -282,7 +282,7 @@ public class StepDefinitions {
         } else {
             String url = brokerResponse.getResources().get(0).getEntity().getBrokerUrl();
             if (url.compareTo(autosleepUrl) != 0) {
-                throw new CloudFoundryException(400, "Invalid broker url", "Bad Request");
+                throw new CloudFoundryException(400, "The service broker url is taken", "270003");
             }
         }
         
@@ -380,8 +380,8 @@ public class StepDefinitions {
                     log.error("autosleep service is not available");
                 }
             } else {
-                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                        "Organization : \"" + organizationName[index] + "\" doesn't exist in Cloud Foundry");
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationName[index] + "\" could not be found", "30003");
             }
         }
     }
@@ -410,8 +410,8 @@ public class StepDefinitions {
             } catch (HttpClientErrorException e) {
                 status[index] = 400; 
                 result[index] = "Organization : \"" 
-                        + organizationName[index] + "\" doesn't exist in Cloud Foundry";
-            } catch (Exception e) {
+                        + organizationName[index] + "\" could not be found";
+            } catch (RuntimeException e) {
                 log.error("Error completing Pre Scenario Execution : " + e);
             }
         }
@@ -434,8 +434,8 @@ public class StepDefinitions {
                 
                 assertEquals(1, instanceCount);
             } else {
-                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                        "Organization : \"" + organizationName[index] + "\" doesn't exist in Cloud Foundry");
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationName[index] + "\" could not be found", "30003");
             }
         }        
     }
@@ -444,12 +444,12 @@ public class StepDefinitions {
     public void applications_in_the_spaces_are_bounded_with_the_service_instance() throws Throwable {
         
         for (int index = 0; index < organizationId.length; index++) {
-            ListApplicationServiceBindingsRequest appBindReq = ListApplicationServiceBindingsRequest.builder()
+            ListApplicationServiceBindingsRequest appBindRequest = ListApplicationServiceBindingsRequest.builder()
                     .applicationId(testAppId[index][0])
                     .build();
             
             ListApplicationServiceBindingsResponse appBindRes = cfclient.applicationsV2()
-                    .listServiceBindings(appBindReq)
+                    .listServiceBindings(appBindRequest)
                     .get();
             
             String serviceBindingIdForApp = appBindRes.getResources().get(0).getMetadata().getId();
@@ -484,8 +484,8 @@ public class StepDefinitions {
         }
     }
     
-    @When("^fetching the organizations enrollment details$")
-    public void fetching_organizations_enrollment_details() {
+    @When("^fetching the organization enrollment details$")
+    public void fetching_organization_enrollment_details() {
         Arrays.fill(status, 404);
 
         log.info("Executing Scenario");
@@ -511,21 +511,21 @@ public class StepDefinitions {
 
             } catch (HttpClientErrorException e) {
                 status[index] = 404;
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.error("Error Fetching Organization details : " + e);
             }
         }
     }
     
-    @Then("^should return the organizations details as \"(.*)\" \"(.*)\" \"(.*)\"$")
+    @Then("^should return the organization details as \"(.*)\" \"(.*)\" \"(.*)\"$")
     public void the_response_body_is(String arg1, String arg2, String arg3) {
         log.info("Asserting result for response body");
 
         for (int index = 0; index < organizationId.length; index++) {
             String expectedResult = arg1 + "\"" + organizationId[index] + "\"" + arg3;
             if (organizationId[index] == null) {
-                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                        "Organization : \"" + organizationName[index] + "\" doesn't exist in Cloud Foundry");
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationName[index] + "\" could not be found", "30003");
             } else {
                 assertEquals(expectedResult, result[index] );
             }
@@ -623,16 +623,17 @@ public class StepDefinitions {
                 }
                 
             } else {
-                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                        "Organization : \"" + organizationName[index] + "\" doesn't exist in Cloud Foundry");
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationName[index] + "\" could not be found", "30003");
             }
         }
     }
     
-    @Given("^an organization is enrolled with autosleep with service instances in it$")
+    @Given("^an organization is already enrolled with autosleep and service instances are "
+            + "running in its each space as per previous enrollment$")
     public void an_organization_is_enrolled_with_autosleep_with_service_instances_in_it() throws Throwable {
-        log.info("Given an organization is enrolled with autosleep and have service instances "
-                + "in transitive mode");
+        log.info("Given an organization is already enrolled with autosleep and service instances "
+                + "in transitive mode are running in its each space as per previous enrollment");
     }
     
     @When("^an organization enrollment is updated with autosleep$")
@@ -658,14 +659,14 @@ public class StepDefinitions {
             } catch (HttpClientErrorException e) {
                 status[index] = 400; 
                 result[index] = "Organization : \"" 
-                        + organizationName[index] + "\" doesn't exist in Cloud Foundry";
-            } catch (Exception e) {
+                        + organizationName[index] + "\" could not be found";
+            } catch (RuntimeException e) {
                 log.error("Error completing Pre Scenario Execution : " + e);
             }
         }
     }
     
-    @Then("^service instances are updated in all spaces of the organization$")
+    @Then("^service instances are updated in all spaces of the organization as per latest enrollment$")
     public static void service_instances_are_updated_in_all_spaces_of_the_organization() throws Throwable {
         
         Thread.currentThread();
@@ -693,15 +694,15 @@ public class StepDefinitions {
                 
                 assertEquals(1, instanceCount);
             } else {
-                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                        "Organization : \"" + organizationName[index] + "\" doesn't exist in Cloud Foundry");
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationName[index] + "\" could not be found", "30003");
             }
         }
     }
     
     @When("^unenrolling an organization from autosleep$")
-    public void delete_organizations_enrollment_details() {
-        log.info("Executing Scenario Delete org");
+    public void delete_organization_enrollment_details() throws Throwable {
+        log.info("Executing Scenario Unenrolling organization");
 
         int index = 0;
 
@@ -725,13 +726,13 @@ public class StepDefinitions {
                 Thread.sleep(20000);
             } catch (HttpClientErrorException e) {
                 status[index] = 404;
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.error("Error deleting organization details : " + e);
             }
         }
     }
     
-    @Then("^service instances are deleted$")
+    @Then("^service instances are deleted from all of its spaces$")
     public static void service_instances_are_deleted() throws Throwable {
         
         log.info("Check for service instances after unenrolling");
@@ -758,13 +759,13 @@ public class StepDefinitions {
                 
                 assertEquals(0, instanceCount);
             } else {
-                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(), "Bad Request",
-                        "Organization : \"" + organizationName[index] + "\" doesn't exist in Cloud Foundry");
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationName[index] + "\" could not be found", "30003");
             }
         }
     }
     
-    @After({"@ScenarioOrganizationNotFoundForUnenroll"})
+    @After({"@OrganizationNotFoundForUnenroll"})
     public void after_scenario_register_new_organization() {
         log.info("Executing post scenario");
 
