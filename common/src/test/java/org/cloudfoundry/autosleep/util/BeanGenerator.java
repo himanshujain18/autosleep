@@ -20,11 +20,14 @@
 package org.cloudfoundry.autosleep.util;
 
 import org.cloudfoundry.autosleep.access.dao.model.ApplicationInfo;
+import org.cloudfoundry.autosleep.access.dao.model.AutoServiceInstance;
 import org.cloudfoundry.autosleep.access.dao.model.Binding;
 import org.cloudfoundry.autosleep.access.dao.model.Binding.ResourceType;
+import org.cloudfoundry.autosleep.access.dao.model.EnrolledOrganizationConfig;
 import org.cloudfoundry.autosleep.access.dao.model.SpaceEnrollerConfig;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.UUID;
@@ -41,6 +44,12 @@ public class BeanGenerator {
     public static final UUID SERVICE_DEFINITION_ID = UUID.randomUUID();
 
     public static final UUID SPACE_TEST = UUID.randomUUID();
+    
+    public static final Duration IDLE_DURATION = Duration.ofMillis(100);
+    
+    public static final String SPACE_ID = UUID.randomUUID().toString();
+    
+    public static final String ORGANIZATION_ID = UUID.randomUUID().toString();
 
     public static ApplicationIdentity createAppIdentity(String appUuid) {
         return ApplicationIdentity.builder()
@@ -160,7 +169,45 @@ public class BeanGenerator {
                 .spaceId(SPACE_TEST.toString())
                 .id(serviceId).build();
     }
+    
+    public static SpaceEnrollerConfig createServiceInstance(String serviceId, String spaceId, String orgId) {
+        return SpaceEnrollerConfig.builder()
+                .serviceDefinitionId(SERVICE_DEFINITION_ID.toString())
+                .planId(PLAN_ID.toString())
+                .organizationId(orgId)
+                .spaceId(spaceId)
+                .id(serviceId).build();
+    }
+    
+    public static EnrolledOrganizationConfig createEnrolledOrganizationConfig() {
+        return createEnrolledOrganizationConfig(UUID.randomUUID().toString());
+    }
 
+    public static EnrolledOrganizationConfig createEnrolledOrganizationConfig(String orgId) {
+        return EnrolledOrganizationConfig.builder()
+                .organizationId(orgId)
+                .idleDuration(IDLE_DURATION) //TODO: check if to consider Transitive
+                .build();
+    }
+    
+    
+    public static AutoServiceInstance createAutoServiceInstance(String instanceId, String spaceId, String orgId) {
+        if (instanceId == null) {
+            instanceId = UUID.randomUUID().toString();
+        }
+        if (spaceId == null) {
+            spaceId = UUID.randomUUID().toString();
+        }
+        if (orgId == null) {
+            orgId = UUID.randomUUID().toString();
+        }
+        return AutoServiceInstance.builder()
+                .organizationId(orgId)
+                .serviceInstanceId(instanceId)
+                .spaceId(spaceId)
+                .build();
+    }
+    
     public static String getSampleVcapApplication(UUID applicationId, String applicationName, String... uris) {
         return "{\"limits\":{\"mem\":1024,\"disk\":1024,\"fds\":16384},"
                 + "\"application_id\":\"" + applicationId.toString() + "\","

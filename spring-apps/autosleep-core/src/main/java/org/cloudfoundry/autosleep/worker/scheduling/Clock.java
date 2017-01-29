@@ -59,14 +59,14 @@ public class Clock {
     
     public void deleteTask(String id) {
         log.debug("deleteTask - task {}", id);     
-        System.out.println("delete method START");
         
         ScheduledFuture<?> oldHandle = tasks.get(id);        
-        if(oldHandle != null) {
+        if (oldHandle != null) {
             oldHandle.cancel(true);
         }
         tasks.remove(id);        
     }
+    
     /**
      * Schedule a Runnable to be run after a certain delay.
      * @param id       task id, will be used to remove it

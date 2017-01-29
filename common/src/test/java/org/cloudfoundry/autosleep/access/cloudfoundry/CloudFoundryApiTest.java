@@ -19,8 +19,9 @@
 
 package org.cloudfoundry.autosleep.access.cloudfoundry;
 
-import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationActivity;
+import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationActivity; 
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
+import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.Resource.Metadata;
 import org.cloudfoundry.client.v2.applications.ApplicationEntity;
@@ -46,7 +47,15 @@ import org.cloudfoundry.client.v2.events.EventResource;
 import org.cloudfoundry.client.v2.events.Events;
 import org.cloudfoundry.client.v2.events.ListEventsRequest;
 import org.cloudfoundry.client.v2.events.ListEventsResponse;
+import org.cloudfoundry.client.v2.organizations.GetOrganizationRequest;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
+import org.cloudfoundry.client.v2.organizations.ListOrganizationsResponse;
+import org.cloudfoundry.client.v2.organizations.OrganizationEntity;
+import org.cloudfoundry.client.v2.organizations.OrganizationResource;
+import org.cloudfoundry.client.v2.organizations.Organizations;
 import org.cloudfoundry.client.v2.routes.GetRouteRequest;
 import org.cloudfoundry.client.v2.routes.GetRouteResponse;
 import org.cloudfoundry.client.v2.routes.ListRouteApplicationsRequest;
@@ -61,8 +70,22 @@ import org.cloudfoundry.client.v2.servicebindings.ServiceBindingEntity;
 import org.cloudfoundry.client.v2.servicebindings.ServiceBindings;
 import org.cloudfoundry.client.v2.serviceinstances.BindServiceInstanceToRouteRequest;
 import org.cloudfoundry.client.v2.serviceinstances.BindServiceInstanceToRouteResponse;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
+import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstanceEntity;
 import org.cloudfoundry.client.v2.serviceinstances.ServiceInstances;
+import org.cloudfoundry.client.v2.serviceplans.ListServicePlansRequest;
+import org.cloudfoundry.client.v2.serviceplans.ListServicePlansResponse;
+import org.cloudfoundry.client.v2.serviceplans.ServicePlanEntity;
+import org.cloudfoundry.client.v2.serviceplans.ServicePlanResource;
+import org.cloudfoundry.client.v2.serviceplans.ServicePlans;
+import org.cloudfoundry.client.v2.services.ListServicesRequest;
+import org.cloudfoundry.client.v2.services.ListServicesResponse;
+import org.cloudfoundry.client.v2.services.ServiceEntity;
+import org.cloudfoundry.client.v2.services.ServiceResource;
+import org.cloudfoundry.client.v2.services.Services;
+import org.cloudfoundry.client.v2.spaces.SpaceResource;
 import org.cloudfoundry.logging.LogMessage;
 import org.cloudfoundry.logging.LogMessage.MessageType;
 import org.cloudfoundry.logging.LoggingClient;
@@ -71,7 +94,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.core.env.Environment;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -80,7 +106,10 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -90,6 +119,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -102,6 +132,7 @@ public class CloudFoundryApiTest {
     @Mock
     private CloudFoundryClient cfClient;
 
+    @Spy
     @InjectMocks
     private CloudFoundryApi cloudFoundryApi;
 
@@ -110,6 +141,9 @@ public class CloudFoundryApiTest {
     
     @Mock
     private CloudFoundryApi cfFoundryApi;
+    
+    @Mock
+    private Environment environment;
 
     private void mockGetApplication(ApplicationsV2 mockApplications, String name, String applicationState) {
         when(mockApplications.get(any(GetApplicationRequest.class)))
@@ -615,9 +649,390 @@ public class CloudFoundryApiTest {
     @Test
     public void test_getOrganizationDetails_when_not_found() throws org.cloudfoundry.client.v2.CloudFoundryException {
         String fakeOrgId = "fakeId";
-        GetOrganizationResponse response = null;
+        GetOrganizationResponse response = GetOrganizationResponse.builder()
+                .build();
         when(cfFoundryApi.getOrganizationDetails(fakeOrgId)).thenReturn(response);
         assertEquals("getOrganizationNotFound",cfFoundryApi.getOrganizationDetails(fakeOrgId),response);  
 
+    }
+    
+    @Test
+    public void test_isValidOrganization_should_return_true_for_valid_organization()
+            throws CloudFoundryException {
+        String fakeOrgId = "organization-guid";
+        Organizations organizations = mock(Organizations.class);
+        when(cfClient.organizations()).thenReturn(organizations);
+        GetOrganizationRequest request = GetOrganizationRequest.builder().organizationId(fakeOrgId)
+                .build();
+        GetOrganizationResponse response = GetOrganizationResponse.builder()
+                .metadata(Metadata.builder().id(fakeOrgId).build())
+                .entity(OrganizationEntity.builder().name("organization-name").build()).build();
+        when(organizations.get(request)).thenReturn(Mono.just(response));
+        assertTrue(cloudFoundryApi.isValidOrganization(fakeOrgId));
+    }
+    
+    @Test
+    public void test_listOrganizationSpaces_return_response_for_valid_organization() 
+            throws CloudFoundryException {
+        String orgId = UUID.randomUUID().toString();
+        String spaceId = UUID.randomUUID().toString();
+        
+        Organizations organizations = mock(Organizations.class);
+        when(cfClient.organizations()).thenReturn(organizations);
+        SpaceResource resource = SpaceResource.builder()
+                .metadata(Metadata.builder().id(spaceId).build()).build();
+        ListOrganizationSpacesRequest request = 
+                ListOrganizationSpacesRequest.builder().organizationId(orgId).build();
+        ListOrganizationSpacesResponse response = ListOrganizationSpacesResponse.builder()
+                .resource(resource)
+                .build();
+        
+        when(organizations.listSpaces(request)).thenReturn(Mono.just(response));
+        
+        assertEquals(response, cloudFoundryApi.listOrganizationSpaces(orgId));
+    }
+    
+    @Test
+    public void test_listOrganizationSpaces_should_throw_exception_for_invalid_organization()
+            throws CloudFoundryException {
+        String orgId = "fakeOrgId";
+        Organizations organizations = mock(Organizations.class);
+        when(cfClient.organizations()).thenReturn(organizations);
+        ListOrganizationSpacesRequest request = 
+                ListOrganizationSpacesRequest.builder().organizationId(orgId).build();
+        when(organizations.listSpaces(request))
+                .thenReturn(Mono.error(new RuntimeException("some error")));
+        verifyThrown(() -> cloudFoundryApi.listOrganizationSpaces(orgId), Throwable.class);
+    }
+    
+    @Test
+    public void test_listAllOrganizations_return_response_for_valid_request()
+            throws CloudFoundryException {
+        String orgId = UUID.randomUUID().toString();
+        String orgName = "testOrg";
+        
+        Organizations organizations = mock(Organizations.class);
+        when(cfClient.organizations()).thenReturn(organizations);
+        ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
+        ListOrganizationsResponse response = ListOrganizationsResponse.builder()
+                .resource(OrganizationResource.builder()
+                        .metadata(Metadata.builder().id(orgId).build())
+                        .entity(OrganizationEntity.builder().name(orgName).build())
+                        .build())
+                .build();
+        
+        when(organizations.list(request)).thenReturn(Mono.just(response));
+        
+        assertEquals(response, cloudFoundryApi.listAllOrganizations());
+    }
+    
+    @Test
+    public void test_listAllOrganizations_should_throw_exception_for_any_other_error()
+            throws CloudFoundryException {
+        Organizations organizations = mock(Organizations.class);
+        when(cfClient.organizations()).thenReturn(organizations);
+        ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
+        when(organizations.list(request))
+                .thenReturn(Mono.error(new RuntimeException("some error")));
+        verifyThrown(() -> cloudFoundryApi.listAllOrganizations(), Throwable.class);
+    }
+    
+    @Test
+    public void test_deleteServiceInstanceBinding_should_delete_valid_binding() 
+            throws CloudFoundryException {
+        String bindingId = UUID.randomUUID().toString();
+        
+        ServiceBindings serviceBindings = mock(ServiceBindings.class);
+        when(cfClient.serviceBindings()).thenReturn(serviceBindings);
+        DeleteServiceBindingRequest request = 
+                DeleteServiceBindingRequest.builder().serviceBindingId(bindingId).build();
+        when(serviceBindings.delete(request)).thenReturn(Mono.empty());
+        cloudFoundryApi.deleteServiceInstanceBinding(bindingId);
+        verify(serviceBindings, times(1)).delete(request);
+    }
+    
+    @Test
+    public void test_deleteServiceInstanceBinding_should_throw_exception_for_any_other_error()
+    throws CloudFoundryException {
+        ServiceBindings serviceBindings = mock(ServiceBindings.class);
+        when(cfClient.serviceBindings()).thenReturn(serviceBindings);
+        when(serviceBindings.delete(any(DeleteServiceBindingRequest.class)))
+                .thenReturn(Mono.error(new RuntimeException("some error")));
+        verifyThrown(() -> cloudFoundryApi.deleteServiceInstanceBinding("service-binding-id"),
+                CloudFoundryException.class);
+    }
+    
+    @Test
+    public void test_deleteServiceInstance_should_delete_valid_service_instance() 
+            throws CloudFoundryException {
+        String instanceId = UUID.randomUUID().toString();
+        
+        ServiceInstances serviceInstance = mock(ServiceInstances.class);
+        when(cfClient.serviceInstances()).thenReturn(serviceInstance);
+        DeleteServiceInstanceRequest request = 
+                DeleteServiceInstanceRequest.builder().serviceInstanceId(instanceId).build();
+        when(serviceInstance.delete(request)).thenReturn(Mono.empty());
+        cloudFoundryApi.deleteServiceInstance(instanceId);
+        verify(serviceInstance, times(1)).delete(request);
+    }
+    
+    @Test
+    public void test_deleteServiceInstance_should_throw_exception_for_any_other_error()
+            throws CloudFoundryException {
+        String instanceId = UUID.randomUUID().toString();
+        
+        ServiceInstances serviceInstance = mock(ServiceInstances.class);
+        when(cfClient.serviceInstances()).thenReturn(serviceInstance);
+        when(serviceInstance.delete(any(DeleteServiceInstanceRequest.class)))
+                .thenReturn(Mono.error(new RuntimeException("some error")));
+        verifyThrown(() -> cloudFoundryApi.deleteServiceInstance(instanceId),
+                CloudFoundryException.class);
+    }
+    
+    @Test
+    public void test_getServicePlanId_should_return_null_if_serviceId_is_null()
+            throws CloudFoundryException {
+        String serviceId = null;
+        String servicePlanId = null;
+        
+        assertEquals(servicePlanId, cloudFoundryApi.getServicePlanId(serviceId));
+    }
+    
+    @Test
+    public void test_getServicePlanId_should_return_planId_for_valid_serviceId()
+            throws CloudFoundryException {
+        String serviceId = UUID.randomUUID().toString();
+        String servicePlanId = UUID.randomUUID().toString();
+        
+        ServicePlans servicePlans = mock(ServicePlans.class);
+        when(cfClient.servicePlans()).thenReturn(servicePlans);
+        ListServicePlansRequest request = ListServicePlansRequest.builder()
+                .serviceId(serviceId).build();
+        ListServicePlansResponse response = ListServicePlansResponse.builder()
+                .resource(ServicePlanResource.builder()
+                        .metadata(Metadata.builder().id(servicePlanId).build())
+                        .entity(ServicePlanEntity.builder().name("service-plan").build())
+                        .build())
+                .build();
+        when(servicePlans.list(request)).thenReturn(Mono.just(response));
+        
+        assertEquals(servicePlanId, cloudFoundryApi.getServicePlanId(serviceId));
+    }
+    
+    @Test
+    public void test_getServicePlanId_should_should_throw_exception_for_any_other_error()
+            throws CloudFoundryException {
+        String serviceId = UUID.randomUUID().toString();
+        
+        ServicePlans servicePlans = mock(ServicePlans.class);
+        when(cfClient.servicePlans()).thenReturn(servicePlans);
+        ListServicePlansRequest request = ListServicePlansRequest.builder()
+                .serviceId(serviceId).build();
+        when(servicePlans.list(request)).thenReturn(Mono.error(new RuntimeException("some error")));
+        
+        verifyThrown(() -> cloudFoundryApi.getServicePlanId(serviceId), Throwable.class);
+    }
+    
+    @Test
+    public void test_getServiceId_should_return_serviceId_for_valid_request()
+            throws CloudFoundryException {
+        String serviceBrokerName = "service-broker";
+        String serviceId = UUID.randomUUID().toString();
+        
+        when(environment.getProperty(anyString(), anyString()))
+                .thenReturn(serviceBrokerName);
+        
+        Services services = mock(Services.class);
+        when(cfClient.services()).thenReturn(services);
+        
+        ListServicesRequest request = ListServicesRequest.builder()
+                .label(serviceBrokerName)
+                .build();
+        ListServicesResponse response = ListServicesResponse.builder()
+                .resource(ServiceResource.builder()
+                        .metadata(Metadata.builder().id(serviceId).build())
+                        .entity(ServiceEntity.builder().label(serviceBrokerName).build())
+                        .build())
+                .build();
+        when(services.list(request)).thenReturn(Mono.just(response));
+        
+        assertEquals(serviceId, cloudFoundryApi.getServiceId());
+    }
+    
+    @Test
+    public void test_getServiceId_should_throw_exception_for_any_other_error()
+            throws CloudFoundryException {
+        String serviceBrokerName = "service-broker";
+        
+        when(environment.getProperty(anyString(), anyString()))
+                .thenReturn(serviceBrokerName);
+        
+        Services services = mock(Services.class);
+        when(cfClient.services()).thenReturn(services);
+        
+        ListServicesRequest request = ListServicesRequest.builder()
+                .label(serviceBrokerName)
+                .build();
+        when(services.list(request)).thenReturn(Mono.error(new RuntimeException("some error")));
+        
+        verifyThrown(() -> cloudFoundryApi.getServiceId(), Throwable.class);
+    }
+    
+    @Test
+    public void test_createServiceInstance_should_return_null_if_serviceId_is_null()
+            throws CloudFoundryException {
+        EnrolledSpaceConfig serviceInstanceInfo = mock(EnrolledSpaceConfig.class);
+        String serviceId = null;
+        String serviceBrokerName = "service-broker";
+        
+        when(environment.getProperty(anyString(), anyString()))
+                .thenReturn(serviceBrokerName);
+        
+        Services services = mock(Services.class);
+        when(cfClient.services()).thenReturn(services);
+        
+        ListServicesRequest request = ListServicesRequest.builder()
+                .label(serviceBrokerName)
+                .build();
+        ListServicesResponse response = ListServicesResponse.builder()
+                .resource(ServiceResource.builder()
+                        .metadata(Metadata.builder().id(serviceId).build())
+                        .entity(ServiceEntity.builder().label(serviceBrokerName).build())
+                        .build())
+                .build();
+        when(services.list(request)).thenReturn(Mono.just(response));
+        
+        CloudFoundryApi cfApi = mock(CloudFoundryApi.class);
+        when(cfApi.getServiceId()).thenReturn(serviceId);
+        CreateServiceInstanceResponse createServiceInstanceResponse = cloudFoundryApi
+                .createServiceInstance(serviceInstanceInfo);
+        assertEquals(null, createServiceInstanceResponse);
+    }
+    
+    @Test
+    public void test_createServiceInstance_should_create_instance_for_valid_request()
+            throws CloudFoundryException {
+        
+        final String instanceName = "service-instance";
+        final String instanceId = UUID.randomUUID().toString();
+        final String serviceId = UUID.randomUUID().toString();
+        final String servicePlanId = UUID.randomUUID().toString();
+        final String spaceId = UUID.randomUUID().toString();
+        final Duration interval = Duration.ofMillis(300);
+        final String serviceBrokerName = "service-broker";
+        
+        EnrolledSpaceConfig serviceInstanceInfo = mock(EnrolledSpaceConfig.class);
+        when(serviceInstanceInfo.getSpaceId()).thenReturn(spaceId);
+        when(serviceInstanceInfo.getIdleDuration()).thenReturn(interval);
+        
+        Map<String, Object> requestParameters = new HashMap<>();
+        requestParameters.put("idle-duration", "0.3S");
+        requestParameters.put("auto-enrollment", "transitive");
+        
+        when(environment.getProperty(anyString(), anyString()))
+                .thenReturn(serviceBrokerName);
+        
+        Services services = mock(Services.class);
+        when(cfClient.services()).thenReturn(services);
+        
+        ListServicesRequest request = ListServicesRequest.builder()
+                .label(serviceBrokerName)
+                .build();
+        ListServicesResponse response = ListServicesResponse.builder()
+                .resource(ServiceResource.builder()
+                        .metadata(Metadata.builder().id(serviceId).build())
+                        .entity(ServiceEntity.builder().label(serviceBrokerName).build())
+                        .build())
+                .build();
+        when(services.list(request)).thenReturn(Mono.just(response));
+        CloudFoundryApi cfApi = mock(CloudFoundryApi.class);
+        when(cfApi.getServiceId()).thenReturn(serviceId);
+        
+        ServicePlans servicePlans = mock(ServicePlans.class);
+        when(cfClient.servicePlans()).thenReturn(servicePlans);
+        ListServicePlansRequest planRequest = ListServicePlansRequest.builder()
+                .serviceId(serviceId).build();
+        ListServicePlansResponse planResponse = ListServicePlansResponse.builder()
+                .resource(ServicePlanResource.builder()
+                        .metadata(Metadata.builder().id(servicePlanId).build())
+                        .entity(ServicePlanEntity.builder().name("service-plan").build())
+                        .build())
+                .build();
+        when(servicePlans.list(planRequest)).thenReturn(Mono.just(planResponse));
+        when(cfApi.getServicePlanId(serviceId)).thenReturn(servicePlanId);
+        
+        ServiceInstances serviceInstances = mock(ServiceInstances.class);
+        when(cfClient.serviceInstances()).thenReturn(serviceInstances);
+        
+        CreateServiceInstanceResponse instanceResponse = CreateServiceInstanceResponse.builder()
+                .metadata(Metadata.builder().id(instanceId).build())
+                .entity(ServiceInstanceEntity.builder()
+                        .name(instanceName)
+                        .spaceId(spaceId)
+                        .servicePlanId(servicePlanId)
+                        .build())
+                .build();
+        
+        when(serviceInstances.create(any(CreateServiceInstanceRequest.class))).thenReturn(Mono.just(instanceResponse));
+        assertEquals(instanceResponse, cloudFoundryApi.createServiceInstance(serviceInstanceInfo));
+    }
+    
+    @Test
+    public void test_createServiceInstance_should_throw_exception_for_any_other_error()
+            throws CloudFoundryException {
+        final String serviceId = UUID.randomUUID().toString();
+        final String servicePlanId = UUID.randomUUID().toString();
+        final String serviceBrokerName = "service-broker";
+        String spaceId = UUID.randomUUID().toString();
+        Duration interval = Duration.ofMillis(300);
+        
+        EnrolledSpaceConfig serviceInstanceInfo = mock(EnrolledSpaceConfig.class);
+        when(serviceInstanceInfo.getSpaceId()).thenReturn(spaceId);
+        when(serviceInstanceInfo.getIdleDuration()).thenReturn(interval);
+        
+        Map<String, Object> requestParameters = new HashMap<>();
+        requestParameters.put("idle-duration", "0.3S");
+        requestParameters.put("auto-enrollment", "transitive");
+        
+        when(environment.getProperty(anyString(), anyString()))
+                .thenReturn(serviceBrokerName);
+        
+        Services services = mock(Services.class);
+        when(cfClient.services()).thenReturn(services);
+        
+        ListServicesRequest request = ListServicesRequest.builder()
+                .label(serviceBrokerName)
+                .build();
+        ListServicesResponse response = ListServicesResponse.builder()
+                .resource(ServiceResource.builder()
+                        .metadata(Metadata.builder().id(serviceId).build())
+                        .entity(ServiceEntity.builder().label(serviceBrokerName).build())
+                        .build())
+                .build();
+        when(services.list(request)).thenReturn(Mono.just(response));
+        CloudFoundryApi cfApi = mock(CloudFoundryApi.class);
+        when(cfApi.getServiceId()).thenReturn(serviceId);
+        
+        ServicePlans servicePlans = mock(ServicePlans.class);
+        when(cfClient.servicePlans()).thenReturn(servicePlans);
+        ListServicePlansRequest planRequest = ListServicePlansRequest.builder()
+                .serviceId(serviceId).build();
+        ListServicePlansResponse planResponse = ListServicePlansResponse.builder()
+                .resource(ServicePlanResource.builder()
+                        .metadata(Metadata.builder().id(servicePlanId).build())
+                        .entity(ServicePlanEntity.builder().name("service-plan").build())
+                        .build())
+                .build();
+        when(servicePlans.list(planRequest)).thenReturn(Mono.just(planResponse));
+        when(cfApi.getServicePlanId(serviceId)).thenReturn(servicePlanId);
+        
+        ServiceInstances serviceInstances = mock(ServiceInstances.class);
+        when(cfClient.serviceInstances()).thenReturn(serviceInstances);
+        
+        Throwable cause = new org.cloudfoundry.client.v2.CloudFoundryException(30004, "some error", "some error");
+        when(serviceInstances.create(any(CreateServiceInstanceRequest.class)))
+                .thenReturn(Mono.error(cause));
+        
+        verifyThrown(() -> cloudFoundryApi.createServiceInstance(serviceInstanceInfo), Throwable.class);
     }
 }

@@ -35,6 +35,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -46,7 +47,12 @@ import static org.junit.Assert.assertTrue;
 @ContextConfiguration(classes = {ApplicationConfiguration.class, RepositoryConfig.class, EnableJpaConfiguration.class})
 public abstract class BindingRepositoryTest extends CrudRepositoryTest<Binding> {
 
-    private static final String APP_GUID = "2F5A0947-6468-401B-B12A-963405121937";
+    private static final String APP_GUID = UUID.randomUUID().toString();
+    
+    private static final String SERVICE_INSTANCE_ID = UUID.randomUUID().toString();
+    
+    private static final String SERVICE_INSTANCE_ID_MOCKED = UUID.randomUUID().toString();
+
 
     @Autowired
     private BindingRepository bindingRepository;
@@ -56,7 +62,7 @@ public abstract class BindingRepositoryTest extends CrudRepositoryTest<Binding> 
         return Binding.builder()
                 .resourceId(APP_GUID)
                 .resourceType(ResourceType.Application)
-                .serviceInstanceId("service")
+                .serviceInstanceId(SERVICE_INSTANCE_ID)
                 .serviceBindingId(id)
                 .build();
     }
@@ -101,5 +107,35 @@ public abstract class BindingRepositoryTest extends CrudRepositoryTest<Binding> 
         //then the count is equal to zero
         assertTrue("No route binding should be found", count == 0);
     }
+    
+    
+    @Test
+    public void test_find_by_serviceInstance_id_existing() {        
+ 
+        List<String> ids = Arrays.asList("testFind1", "testFind2");
+        ids.forEach(id -> bindingRepository.save(build(id)));
+        int count = bindingRepository.findByServiceInstanceId(SERVICE_INSTANCE_ID).size();
+        assertTrue("Retrieving all elements should return the same quantity", count == ids.size());        
+        
+    }
+    
+    @Test
+    public void test_find_by_serviceInstance_id_not_existing() {        
+
+        List<String> ids = Arrays.asList("testFind1", "testFind2");
+        ids.forEach(id -> bindingRepository.save(build(id)));
+        int count = bindingRepository.findByServiceInstanceId("false_service_instance").size();
+        assertTrue("No binding should be found", count == 0);        
+        
+    }
+    
+    
+/*
+postgresql.driver=org.postgresql.Driver
+postgresql.url=jdbc:postgresql://localhost/autosleep
+# Travis-ci pg user as blank password see https://docs.travis-ci.com/user/database-setup/#PostgreSQL
+postgresql.username=postgres
+postgresql.password=
+*/
 
 }

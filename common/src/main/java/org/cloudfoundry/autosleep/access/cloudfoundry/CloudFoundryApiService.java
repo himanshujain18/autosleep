@@ -52,7 +52,7 @@ public interface CloudFoundryApiService {
     
     String getServicePlanId(String serviceId) throws CloudFoundryException;
     
-    GetOrganizationResponse getOrganizationDetails(String organizationId) throws org.cloudfoundry.client.v2.CloudFoundryException; 
+    boolean isValidOrganization(String organizationId) throws org.cloudfoundry.client.v2.CloudFoundryException; 
 
     boolean isAppRunning(String appUid) throws CloudFoundryException;
 
@@ -73,4 +73,5 @@ public interface CloudFoundryApiService {
 
     void unbind(String bindingId) throws CloudFoundryException;
 
+    GetOrganizationResponse getOrganizationDetails(String organizationId) throws org.cloudfoundry.client.v2.CloudFoundryException; 
 }

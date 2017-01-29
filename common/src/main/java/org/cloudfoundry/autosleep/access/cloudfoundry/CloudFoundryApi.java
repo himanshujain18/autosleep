@@ -138,6 +138,8 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     static final int CF_INSTANCES_ERROR = 220_001;
 
     static final int CF_STAGING_NOT_FINISHED = 170_002;
+    
+    static final int CF_ORGANIZATION_NOT_FOUND = 30_003;
 
     @Autowired
     private CloudFoundryClient cfClient;
@@ -481,8 +483,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         GetOrganizationResponse response;
         try {
             GetOrganizationRequest request = GetOrganizationRequest.builder()
-                    .organizationId(organizationId).build();    
-
+                    .organizationId(organizationId).build(); 
             response = cfClient.organizations().get(request).get();
 
             if (response != null) {
@@ -495,6 +496,28 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     }
 
     @Override
+    public boolean isValidOrganization(String organizationGuid) 
+            throws org.cloudfoundry.client.v2.CloudFoundryException {
+        GetOrganizationResponse response = cfClient.organizations()
+                .get(GetOrganizationRequest.builder().organizationId(organizationGuid).build())
+                .otherwise(throwable -> {
+                    if (throwable instanceof org.cloudfoundry.client.v2.CloudFoundryException
+                            && isNoOrganizationFoundError(
+                                    (org.cloudfoundry.client.v2.CloudFoundryException) throwable)) {
+                        return Mono.just(GetOrganizationResponse.builder().build());
+                    } else {
+                        return Mono.error(throwable);
+                    }
+                }).get();
+        return response.getEntity() != null;
+    }
+
+    private boolean isNoOrganizationFoundError(
+            org.cloudfoundry.client.v2.CloudFoundryException cloudfoundryException) {
+        return cloudfoundryException.getCode() == CF_ORGANIZATION_NOT_FOUND;
+    }
+
+    @Override
     public ListOrganizationSpacesResponse listOrganizationSpaces(String organizationId) throws CloudFoundryException {
 
         ListOrganizationSpacesResponse response;     
@@ -502,8 +525,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
             ListOrganizationSpacesRequest request = 
                     ListOrganizationSpacesRequest.builder().organizationId(organizationId).build();
             response = cfClient.organizations().listSpaces(request).get();
-
-        } catch (RuntimeException re) {
+        } catch (RuntimeException re) {            
             throw new CloudFoundryException(re);
         }
         return response;
@@ -513,16 +535,13 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     public CreateServiceInstanceResponse createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) 
             throws CloudFoundryException {
         CreateServiceInstanceResponse response = null;
-
         String instanceName = "autosleep" + System.nanoTime();
         Map<String, Object> requestParameters = new HashMap<String, Object>();
-
         if (serviceInstanceInfo.getIdleDuration() != null) {
             requestParameters.put("idle-duration", serviceInstanceInfo.getIdleDuration().toString());
         }
         requestParameters.put("auto-enrollment", "transitive");
-
-        String serviceId = getServiceId();   
+        String serviceId = getServiceId();  
         if (serviceId != null ) {
             String servicePlanId = getServicePlanId(serviceId);
             try {
@@ -533,7 +552,8 @@ public class CloudFoundryApi implements CloudFoundryApiService {
                         .parameters(requestParameters)
                         .build();  
                 response = cfClient.serviceInstances().create(request).get();           
-            } catch (org.cloudfoundry.client.v2.CloudFoundryException re) {           
+            } catch (RuntimeException re) {
+                log.error("ServiceInstance cannot be created. Error : " + re);
                 throw new CloudFoundryException(re);
             } 
         } else {
@@ -549,7 +569,6 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         String serviceId = null;
         String serviceBrokerName = environment.getProperty(EnvKey.CF_SERVICE_BROKER_NAME,
                 Config.ServiceCatalog.DEFAULT_SERVICE_BROKER_NAME);
-        System.out.println("getServiceId::serviceBrokerName " + serviceBrokerName);
         try {
             ListServicesRequest request = ListServicesRequest.builder().label(serviceBrokerName).build();         
             response = cfClient.services().list(request).get();           
@@ -558,8 +577,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
             if (serviceResources.size() != 0) {
                 serviceId = serviceResources.get(0).getMetadata().getId();
             } 
-        } catch (RuntimeException re) {
-            re.printStackTrace();
+        } catch (RuntimeException re) {     
             throw new CloudFoundryException(re);
         }
         return serviceId;
@@ -582,7 +600,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
             } else {
                 log.error("autosleep service doesnot exists");
             }
-        } catch (RuntimeException re) {
+        } catch (RuntimeException re) {           
             throw new CloudFoundryException(re);
         }
         return servicePlanId;
@@ -595,7 +613,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
             DeleteServiceBindingRequest request = 
                     DeleteServiceBindingRequest.builder().serviceBindingId(bindingId).build();
             cfClient.serviceBindings().delete(request).get();
-        } catch (RuntimeException re) {
+        } catch (RuntimeException re) {            
             throw new CloudFoundryException(re);
         }
 
@@ -608,7 +626,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
             DeleteServiceInstanceRequest request = 
                     DeleteServiceInstanceRequest.builder().serviceInstanceId(serviceInstanceId).build();
             cfClient.serviceInstances().delete(request).get();
-        } catch (RuntimeException re) {
+        } catch (RuntimeException re) {           
             throw new CloudFoundryException(re);
         }
     }
@@ -618,7 +636,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         try {
             ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
             response = cfClient.organizations().list(request).get();
-        } catch (RuntimeException re) {
+        } catch (RuntimeException re) {            
             throw new CloudFoundryException(re);
         }        
         return response;

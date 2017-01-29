@@ -19,7 +19,7 @@
 
 package org.cloudfoundry.autosleep.worker;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; 
 import org.cloudfoundry.autosleep.access.dao.repositories.ProxyMapEntryRepository;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig; 
@@ -39,7 +39,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +93,7 @@ public class WorkerManager implements WorkerManagerService {
 
 
         List<EnrolledOrganizationConfig> enrolledOrgs = orgRepository.findAll();   
-        //  orgRepository.findAll().forEach(this::registerOrganizationEnroller);        
-
+        
         if (enrolledOrgs != null) {
             for (EnrolledOrganizationConfig item:enrolledOrgs) {
 
@@ -172,8 +170,6 @@ public class WorkerManager implements WorkerManagerService {
 
     @Override
     public void registerSpaceEnroller(SpaceEnrollerConfig service) {
-        System.out.println("Register thread for new service Instance");
-
         SpaceEnroller spaceEnroller = SpaceEnroller.builder()
                 .clock(clock)
                 .period(service.getIdleDuration())
