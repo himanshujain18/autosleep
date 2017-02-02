@@ -40,8 +40,6 @@ public class OrganizationEnroller extends AbstractPeriodicTask {
 
     private EnrolledOrganizationConfig enrolledOrganizationConfig;
 
-    private Duration rescheduleTime;
-
     private final SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
 
     @Builder
@@ -58,7 +56,6 @@ public class OrganizationEnroller extends AbstractPeriodicTask {
         this.organizationId = organizationId;
         this.cloudFoundryApi = cloudFoundryApi;
         this.enrolledOrganizationConfig = enrolledOrganizationConfig;
-        this.rescheduleTime = period;
         this.spaceEnrollerConfigRepository = spaceEnrollerConfigRepository;
         this.orgRepository = orgRepository;
         this.autoServiceInstanceRepository = autoServiceInstanceRepository;
@@ -72,26 +69,15 @@ public class OrganizationEnroller extends AbstractPeriodicTask {
 
     @Override
     public void run() {
-
+        
         if (cloudFoundryApi.isValidOrganization(organizationId)) {
             enrollOrganizationSpaces();
-            reschedule(this.rescheduleTime);
+            rescheduleWithDefaultPeriod();
         } else {
             autoServiceInstanceRepository.deleteByOrgId(this.organizationId);
             orgRepository.delete(organizationId); //TO CHECK: this should delete the junk orgID
             killTask();
         }
-    }
-
-    public void callReschedule(EnrolledOrganizationConfig ec) {
-
-        this.enrolledOrganizationConfig = ec;
-        this.rescheduleTime = ec.getIdleDuration();
-        start(Duration.ofSeconds(0));
-    }
-
-    public OrganizationEnroller getObj() {
-        return this;
     }
 
     public void enrollOrganizationSpaces() {
@@ -100,7 +86,7 @@ public class OrganizationEnroller extends AbstractPeriodicTask {
             List<AutoServiceInstance> autoServiceInstances = 
                     autoServiceInstanceRepository.findByOrganizationId(this.organizationId);
 
-            if (autoServiceInstances.size() != 0) {	
+            if (autoServiceInstances.size() != 0) {
                 List<String> autoServiceInstanceIDs = new ArrayList<String>();
                 autoServiceInstances.forEach(serviceInstance->
                         autoServiceInstanceIDs.add(serviceInstance.getServiceInstanceId()));

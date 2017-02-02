@@ -32,11 +32,13 @@ import java.util.regex.Pattern;
 
 public interface CloudFoundryApiService {
 
-    void bindApplications(String serviceInstanceId, List<ApplicationIdentity> application) throws CloudFoundryException;
+    void bindApplications(String serviceInstanceId, List<ApplicationIdentity> application) 
+            throws CloudFoundryException;
 
     void bindRoutes(String serviceInstanceId, List<String> routeIds) throws CloudFoundryException;
    
-    CreateServiceInstanceResponse createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) throws CloudFoundryException;
+    CreateServiceInstanceResponse createServiceInstance(EnrolledSpaceConfig serviceInstanceInfo) 
+            throws CloudFoundryException;
 
     void deleteServiceInstance(String serviceInstanceId) throws CloudFoundryException;
     
@@ -73,5 +75,6 @@ public interface CloudFoundryApiService {
 
     void unbind(String bindingId) throws CloudFoundryException;
 
-    GetOrganizationResponse getOrganizationDetails(String organizationId) throws org.cloudfoundry.client.v2.CloudFoundryException; 
+    GetOrganizationResponse getOrganizationDetails(String organizationId) 
+            throws org.cloudfoundry.client.v2.CloudFoundryException; 
 }

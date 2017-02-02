@@ -82,6 +82,17 @@ public class ClockTest {
     }
 
     @Test
+    public void test_delete_task() throws Exception {
+        //Given scheduler contains a task
+        clock.scheduleTask(TEST_ID, PERIOD, runnable);
+        //When we remove the task
+        clock.deleteTask(TEST_ID);
+        //Then clock does not contain any more task
+        assertThat(clock.listTaskIds().size(), is(equalTo(0)));
+
+    }
+    
+    @Test
     public void test_schedule_task_calls_scheduler() throws Exception {
         //Given nothing
         //When we schedule a task

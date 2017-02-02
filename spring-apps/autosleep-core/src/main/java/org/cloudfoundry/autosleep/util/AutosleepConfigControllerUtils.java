@@ -1,6 +1,6 @@
 package org.cloudfoundry.autosleep.util;
 
-import java.time.Duration;
+import java.time.Duration; 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,13 +23,14 @@ import org.cloudfoundry.autosleep.ui.servicebroker.service.InvalidParameterExcep
 import org.cloudfoundry.autosleep.ui.servicebroker.service.parameters.ParameterReader;
 import org.cloudfoundry.autosleep.ui.servicebroker.service.parameters.ParameterReaderFactory;
 import org.cloudfoundry.autosleep.worker.OrganizationEnroller;
-import org.cloudfoundry.autosleep.worker.WorkerManagerService;
 import org.cloudfoundry.autosleep.worker.scheduling.Clock;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
 import org.cloudfoundry.client.v2.spaces.SpaceResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+//import javax.annotation.CheckReturnValue;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,9 +56,6 @@ public class AutosleepConfigControllerUtils {
     @Autowired
     private SpaceEnrollerConfigRepository spaceEnrollerConfigRepository;
 
-    @Autowired
-    private WorkerManagerService workerManager;
-
     public AutosleepConfigControllerResponse validateRequestBody(AutosleepConfigControllerRequest request) {
 
         log.info("validating Request Body");
@@ -80,8 +78,23 @@ public class AutosleepConfigControllerUtils {
 
     public void updateOrganization(EnrolledOrganizationConfig orgInfo) {
 
-        try {             
-            workerManager.getOrganizationObjects().get(orgInfo.getOrganizationId()).callReschedule(orgInfo);
+        try {  
+            //test new approach, delete from clock handle and then add new thread
+            clock.deleteTask(orgInfo.getOrganizationId());
+            OrganizationEnroller orgEnroller = OrganizationEnroller.builder()
+                    .autoServiceInstanceRepository(autoServiceInstanceRepository)
+                    .clock(clock)
+                    .cloudFoundryApi(cloudFoundryApi)
+                    .enrolledOrganizationConfig(orgInfo)
+                    .organizationId(orgInfo.getOrganizationId())
+                    .orgRepository(orgRepository)
+                    .period((orgInfo.getIdleDuration() != null )                                  
+                            ? orgInfo.getIdleDuration() : Config.DEFAULT_INACTIVITY_PERIOD)               
+                    .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)                
+                    .utils(this)
+                    .build();
+
+            orgEnroller.startNow();
         } catch (RuntimeException re) {
             log.error("Updating organization failed. Error: " + re);
             throw re;
@@ -91,13 +104,7 @@ public class AutosleepConfigControllerUtils {
 
     public void stopOrgEnrollerOnDelete(String organizationId) {
 
-        try {             
-            workerManager.getOrganizationObjects().get(organizationId).killTask();
-        } catch (RuntimeException re) {
-            log.error("Orgnization poller for organizationId " + organizationId 
-                    + "failed. Error: " + re);
-            throw re;
-        }
+        clock.deleteTask(organizationId);
     }
 
 
@@ -117,7 +124,6 @@ public class AutosleepConfigControllerUtils {
                     .utils(this)
                     .build();
 
-            workerManager.setOrganizationObjects(orgInfo.getOrganizationId(), orgEnroller);  
             orgEnroller.startNow();   
         } catch (RuntimeException re) {
             log.error("Registering organization " + orgInfo.getOrganizationId()
@@ -260,8 +266,7 @@ public class AutosleepConfigControllerUtils {
 
                 List<SpaceEnrollerConfig> enrolledSpaces = 
                         spaceEnrollerConfigRepository.listByIds(autoServiceInstanceIDs);
-
-                //        
+       
                 enrolledSpaces.forEach(serviceInstance->  { 
                     try {    
                         deleteServiceInstance(serviceInstance.getId()); 
@@ -272,8 +277,8 @@ public class AutosleepConfigControllerUtils {
                 });
             }
         } catch (RuntimeException re) {
-            log.error("ServiceInstances cannot be deleted for organizationId: "
-                   + organizationId + ". Error: "+ re);
+            log.error("ServiceInstances cannot be deleted for organizationId: "  
+                    + organizationId + ". Error: " + re);
             throw new CloudFoundryException(re);
         }
     }
@@ -284,8 +289,7 @@ public class AutosleepConfigControllerUtils {
             List<String> spaceServiceInstances =  new ArrayList<String>();
             spaceConfigServiceInstances.forEach(spaceConfig->
                     spaceServiceInstances.add(spaceConfig.getId()));
-
-            //delete invalid entries from autoServiceinstance Table
+            
             Collection<String> invalidServiceInstance = new HashSet<String>();
             invalidServiceInstance.addAll(autoServiceInstances);
             invalidServiceInstance.removeAll(spaceServiceInstances);
@@ -312,15 +316,16 @@ public class AutosleepConfigControllerUtils {
 
         } catch (CloudFoundryException ce) {
             log.error(" Service Instance cannot be created for space " + enrolledSpaceConfig.getSpaceId()
-                   + ". Error: " + ce);
+                      + ". Error: " + ce);
             throw ce;
         } catch (RuntimeException re) {
             log.error(" Service Instance cannot be created for space " + enrolledSpaceConfig.getSpaceId()
-                   + ". Error: " + re);
+                      + ". Error: " + re);
             throw new CloudFoundryException(re);
         }
     }
-
+    
+    //@CheckReturnValue
     public boolean checkParameters(SpaceEnrollerConfig oldInstance, 
             EnrolledOrganizationConfig enrolledOrganizationConfig ) {
         boolean flag = false;   

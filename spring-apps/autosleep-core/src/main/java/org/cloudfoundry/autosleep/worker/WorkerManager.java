@@ -19,7 +19,7 @@
 
 package org.cloudfoundry.autosleep.worker;
 
-import lombok.extern.slf4j.Slf4j; 
+import lombok.extern.slf4j.Slf4j;  
 import org.cloudfoundry.autosleep.access.dao.repositories.ProxyMapEntryRepository;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.DeployedApplicationConfig; 
@@ -39,9 +39,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.cloudfoundry.autosleep.access.dao.model.Binding.ResourceType.Application;
 
@@ -82,15 +80,11 @@ public class WorkerManager implements WorkerManagerService {
     @Autowired
     private AutosleepConfigControllerUtils utils;
 
-    private Map<String,OrganizationEnroller> organizationObjects;
-
     @PostConstruct
     public void init() {
 
         log.debug("Initializer watchers for every organization already enrolled (except if handle by another" 
                 + "instance of autosleep)");
-        this.organizationObjects = new HashMap<String,OrganizationEnroller>();
-
 
         List<EnrolledOrganizationConfig> enrolledOrgs = orgRepository.findAll();   
         
@@ -133,19 +127,8 @@ public class WorkerManager implements WorkerManagerService {
                 .spaceEnrollerConfigRepository(spaceEnrollerConfigRepository)                
                 .utils(utils)
                 .build();
-        setOrganizationObjects(orgInfo.getOrganizationId(), orgEnroller);
         orgEnroller.start(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK); 
 
-    }
-
-    @Override
-    public Map<String,OrganizationEnroller> getOrganizationObjects() {
-        return this.organizationObjects;
-    }
-
-    @Override
-    public void setOrganizationObjects(String id, OrganizationEnroller orgEnroller) { 
-        this.organizationObjects.put(id, orgEnroller);
     }
 
     @Override
