@@ -341,7 +341,7 @@ public class StepDefinitions {
                                         .name("test-app")
                                         .memory(256)
                                         .spaceId(spaceIds[index][0])
-                                        .buildpack("java_buildpack")
+                                        .buildpack("nodejs_buildpack")
                                         .build())
                                 .get();
 
@@ -349,7 +349,7 @@ public class StepDefinitions {
 
                         cfclient.applicationsV2()
                         .upload(UploadApplicationRequest.builder()
-                                .application(StepDefinitions.class.getClassLoader().getResourceAsStream("Test-App.war"))
+                                .application(StepDefinitions.class.getClassLoader().getResourceAsStream("test-app.zip"))
                                 .applicationId(testAppIds[index][0])
                                 .build())
                             .get();
@@ -586,7 +586,7 @@ public class StepDefinitions {
                                     .name("test-app")
                                     .memory(256)
                                     .spaceId(spaceIds[index][1])
-                                    .buildpack("java_buildpack")
+                                    .buildpack("nodejs_buildpack")
                                     .build())
                             .get();
 
@@ -594,7 +594,7 @@ public class StepDefinitions {
 
                     cfclient.applicationsV2()
                     .upload(UploadApplicationRequest.builder()
-                            .application(getClass().getClassLoader().getResourceAsStream("Test-App.war"))
+                            .application(getClass().getClassLoader().getResourceAsStream("test-app.zip"))
                             .applicationId(testAppIds[index][1])
                             .build())
                         .get();
@@ -993,9 +993,14 @@ public class StepDefinitions {
                     .get();
             serviceBrokerId = response.getMetadata().getId();
         } else {
-            String url = brokerResponse.getResources().get(0).getEntity().getBrokerUrl();
-            if (url.compareTo(autosleepUrl) != 0) {
-                throw new CloudFoundryException(400, "Invalid broker url", "Bad Request");
+            List<ServiceBrokerResource> brokerResource = brokerResponse.getResources();
+            for (ServiceBrokerResource serviceBrokerResource : brokerResource) {
+                if (serviceBrokerResource.getEntity().getBrokerUrl().compareTo(autosleepUrl) == 0) {
+                    if (serviceBrokerResource.getEntity().getName().compareTo(serviceBrokerName) != 0) {
+                        throw new CloudFoundryException(400, "The service broker url is taken", "270003");
+                    }
+                    break;
+                }
             }
         }
 
