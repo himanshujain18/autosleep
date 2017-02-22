@@ -19,7 +19,7 @@
 
 package org.cloudfoundry.autosleep.worker.scheduling;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.Slf4j; 
 import org.cloudfoundry.autosleep.util.TimeManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,14 +76,15 @@ public class Clock {
     public void scheduleTask(String id, Duration duration, Runnable action) {
         log.debug("scheduleTask - task {}", id);
         
-      //Required to cancel the already set time for this thread as per earlier Duraiton
+        //Required to cancel the already set time for this thread as per earlier Duration
         ScheduledFuture<?> oldHandle = tasks.get(id);        
-        if(oldHandle != null) {
+        if (oldHandle != null) {
             oldHandle.cancel(true);
         }
         
         ScheduledFuture<?> handle = timeManager.schedule(action, duration);
-        tasks.put(id, handle);    
+        tasks.put(id, handle);   
+
     }
 
 }

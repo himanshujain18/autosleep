@@ -110,8 +110,6 @@ public class WorkerManagerTest {
 
     private List<String> unattachedBinding = Arrays.asList("unattached01", "unattached02");
     
-    private Map<String,OrganizationEnroller> mockOrgObjects = new HashMap<>();
-
     @Before
     public void populateDb() throws CloudFoundryException {
         doAnswer(invocationOnMock -> {
@@ -159,7 +157,6 @@ public class WorkerManagerTest {
     @Test
     public void testInit() {
         spyWatcher.init();
-        mockOrgObjects = new HashMap<String,OrganizationEnroller>();
         verify(spyWatcher, times(unattachedBinding.size()))
                 .registerApplicationStopper(any(SpaceEnrollerConfig.class), anyString(), anyString());
         verify(spyWatcher, times(serviceIds.size())).registerSpaceEnroller(any(SpaceEnrollerConfig.class));
@@ -179,9 +176,7 @@ public class WorkerManagerTest {
     public void test_organization_enrollment_task_is_scheduled() throws Exception {
         String orgId = "orgId";
         
-        doNothing().when(spyWatcher).setOrganizationObjects(anyString(), any(OrganizationEnroller.class));
         spyWatcher.registerOrganizationEnroller(BeanGenerator.createEnrolledOrganizationConfig(orgId));
-        verify(spyWatcher).setOrganizationObjects(anyString(), any(OrganizationEnroller.class));
         verify(clock).scheduleTask(eq(orgId), eq(Config.DELAY_BEFORE_FIRST_SERVICE_CHECK),
                 any(OrganizationEnroller.class));
     }

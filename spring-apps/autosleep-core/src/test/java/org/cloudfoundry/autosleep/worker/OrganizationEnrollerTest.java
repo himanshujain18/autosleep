@@ -121,24 +121,6 @@ public class OrganizationEnrollerTest {
     }
 
     @Test
-    public void test_call_reschedule() {
-        EnrolledOrganizationConfig enrolledOrganizationConfig = mock(EnrolledOrganizationConfig.class);
-
-        when(enrolledOrganizationConfig.getIdleDuration()).thenReturn(UPDATED_INTERVAL);
-        when(orgEnroller.getEnrolledOrganizationConfig()).thenReturn(enrolledOrganizationConfig);
-        when(orgEnroller.getRescheduleTime()).thenReturn(UPDATED_INTERVAL);
-
-        orgEnroller.callReschedule(enrolledOrganizationConfig);
-        verify(orgEnroller, times(1)).start(ZERO_DELAY);
-    }
-
-    @Test
-    public void test_get_current_enroller_object() {
-        when(orgEnroller.getObj()).thenReturn(orgEnroller);
-        orgEnroller.getObj();
-    }
-
-    @Test
     public void test_create_service_instances_when_new_organization_is_enrolled() throws CloudFoundryException {
         List<String> mockCfSpaces = Arrays.asList("spaceId1", "spaceId2");
         List<AutoServiceInstance> mockAutoServiceInstanceList = Arrays.asList();

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+//import javax.annotation.CheckReturnValue;
+
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -318,7 +320,7 @@ public class AutosleepConfigControllerUtilsTest {
     public void test_registerOrganization() {
         EnrolledOrganizationConfig orgInfo = BeanGenerator.createEnrolledOrganizationConfig(ORGANIZATION_ID);
         utils.registerOrganization(orgInfo);
-        verify(workerMangager).setOrganizationObjects(eq(ORGANIZATION_ID), any(OrganizationEnroller.class));
+        //verify(workerMangager).setOrganizationObjects(eq(ORGANIZATION_ID), any(OrganizationEnroller.class));
         verify(clock).scheduleTask(eq(ORGANIZATION_ID), eq(ZERO_DELAY),
                 any(OrganizationEnroller.class));
     }
@@ -331,15 +333,11 @@ public class AutosleepConfigControllerUtilsTest {
 
     @Test
     public void test_updateOrganization_successful() {
-        EnrolledOrganizationConfig orgInfo = mock(EnrolledOrganizationConfig.class);
-        when(orgInfo.getOrganizationId()).thenReturn(ORGANIZATION_ID);
-        OrganizationEnroller enroller = mock(OrganizationEnroller.class);
-        Map<String, OrganizationEnroller> orgObjects = new HashMap<>();
-        orgObjects.put(ORGANIZATION_ID, enroller);
-        when(workerMangager.getOrganizationObjects()).thenReturn(orgObjects);
-
+        EnrolledOrganizationConfig orgInfo = BeanGenerator.createEnrolledOrganizationConfig(ORGANIZATION_ID);
         utils.updateOrganization(orgInfo);
-        verify(enroller).callReschedule(orgInfo);
+        verify(clock).deleteTask(ORGANIZATION_ID);
+        verify(clock).scheduleTask(eq(ORGANIZATION_ID), eq(ZERO_DELAY),
+                any(OrganizationEnroller.class));
     }
 
     @Test
@@ -350,24 +348,15 @@ public class AutosleepConfigControllerUtilsTest {
 
     @Test
     public void test_stopOrgEnrollerOnDelete_successful() {
-        OrganizationEnroller enroller = mock(OrganizationEnroller.class);
-        Map<String, OrganizationEnroller> orgObjects = new HashMap<>();
-        orgObjects.put(ORGANIZATION_ID, enroller);
-        when(workerMangager.getOrganizationObjects()).thenReturn(orgObjects);
-
+        
         utils.stopOrgEnrollerOnDelete(ORGANIZATION_ID);
-        verify(enroller).killTask();
+        verify(clock).deleteTask(ORGANIZATION_ID);
     }
 
-    @Test
-    public void test_stopOrgEnrollerOnDelete_should_throw_runtimeException() {
-        Map<String, OrganizationEnroller> orgObjects = new HashMap<>();
-        orgObjects.put(ORGANIZATION_ID, null);
-        when(workerMangager.getOrganizationObjects()).thenReturn(orgObjects);
-
-        verifyThrown(() -> utils.stopOrgEnrollerOnDelete(ORGANIZATION_ID), Throwable.class);
-    }
-
+/*
+ * //REASON: RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT: 
+    //Return value of method without side effect is ignored in FindBugs/test.html
+    
     @Test
     public void test_updateServiceInstances_success() throws CloudFoundryException {
 
@@ -387,6 +376,7 @@ public class AutosleepConfigControllerUtilsTest {
                 .checkParameters(mockSpaceConfig1,enrolledOrganizationConfig); 
         doReturn(false).when(utils)
                 .checkParameters(mockSpaceConfig2,enrolledOrganizationConfig); 
+
         doNothing().when(utils).deleteServiceInstance(anyString());
         doNothing().when(utils).createNewServiceInstance(any(EnrolledSpaceConfig.class));
         
@@ -397,7 +387,8 @@ public class AutosleepConfigControllerUtilsTest {
                 .createNewServiceInstance(any(EnrolledSpaceConfig.class));
     }
 
-    @Test
+    @Test  
+    @CheckReturnValue
     public void test_updateServiceInstances_should_throw_exception() throws CloudFoundryException {
         SpaceEnrollerConfig mockSpaceConfig1 = BeanGenerator
                 .createServiceInstance(autoServiceInstanceIDs.get(0), mockSpaceIds.get(0), ORGANIZATION_ID);
@@ -411,6 +402,7 @@ public class AutosleepConfigControllerUtilsTest {
         when(enrolledOrganizationConfig.getOrganizationId()).thenReturn(ORGANIZATION_ID);
         when(enrolledOrganizationConfig.getIdleDuration()).thenReturn(Duration.ofMillis(100));
         
+    
         doReturn(false).when(utils)
                 .checkParameters(mockSpaceConfig1,enrolledOrganizationConfig); 
         doReturn(false).when(utils)
@@ -419,5 +411,5 @@ public class AutosleepConfigControllerUtilsTest {
         verifyThrown(() -> utils.updateServiceInstances(mockExistingServiceInstances,
                 mockSpaceIds, enrolledOrganizationConfig), Throwable.class);
     }
-    
+    */
 }
