@@ -1,6 +1,6 @@
 package org.cloudfoundry.autosleep.test;
 
-import static org.junit.Assert.assertEquals;        
+import static org.junit.Assert.assertEquals;         
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.xhtmlrenderer.pdf.BookmarkElement;
 import org.cloudfoundry.client.v2.CloudFoundryException;
 import org.cloudfoundry.client.v2.applications.ApplicationStatisticsRequest;
 import org.cloudfoundry.client.v2.applications.ApplicationStatisticsResponse;
@@ -42,7 +41,6 @@ import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerResponse;
 import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
 import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersRequest;
 import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersResponse;
-import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerEntity;
 import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerResource;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
@@ -102,6 +100,7 @@ public class StepDefinitions {
     private static String serviceBrokerId;
     private static String servicePlanId;
     private static String[] serviceInstanceIds;
+    private static boolean brokerAlreadyCreated;
 
     private static InputStream inputStream;
 
@@ -169,6 +168,7 @@ public class StepDefinitions {
             }
 
             instanceCount = 0;
+            brokerAlreadyCreated = true;
 
             ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
             ListOrganizationsResponse response = cfclient.organizations().list(request).get();
@@ -265,7 +265,7 @@ public class StepDefinitions {
     }
 
     @Before({"@registerNewOrganization"})
-    public static void before_scenario_register_new_organization() {
+    public static void before_scenario_register_new_organization() throws Throwable {
         log.info("Before scenario execution");
 
         ListServiceBrokersRequest brokerRequest = ListServiceBrokersRequest.builder()
@@ -291,6 +291,7 @@ public class StepDefinitions {
                     .create(request)
                     .get();
             serviceBrokerId = response.getMetadata().getId();
+            brokerAlreadyCreated = false;
         } else {
             List<ServiceBrokerResource> brokerResource = brokerResponse.getResources();
             for (ServiceBrokerResource serviceBrokerResource : brokerResource) {
@@ -377,17 +378,23 @@ public class StepDefinitions {
                                 .build())
                         .get();
 
+                        // Wait for application to get to running state
+                        Thread.sleep(30000);
+                        
                         ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
                                 .applicationId(testAppIds[index][0])
                                 .build();
                         String state = "";
 
-                        do {
-                            ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                                    .statistics(stats)
-                                    .get();
-                            state = statsResponse.get("0").getState();
-                        } while (state.compareTo("DOWN") == 0);
+                        ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
+                                .statistics(stats)
+                                .get();
+                        state = statsResponse.get("0").getState();
+                        
+                        if (state.compareTo("RUNNING") != 0) {
+                            throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(),
+                                    "test application has not finished staging", "170002");
+                        }
 
                     } catch (CloudFoundryException ce) {
                         log.error("Error in pre scenario execution : " + ce);
@@ -558,7 +565,7 @@ public class StepDefinitions {
     }
 
     @Before({"@updateAlreadyEnrolledOrganization"})
-    public void before_scenario_update_enrolled_organization() {
+    public void before_scenario_update_enrolled_organization() throws Throwable {
         log.info("Before scenario register new organization");
 
         for (int index = 0; index < organizationIds.length; index++) {
@@ -622,18 +629,24 @@ public class StepDefinitions {
                             .build())
                     .get();
 
+                    // Wait for application to get to running state
+                    Thread.sleep(30000);
+                    
                     ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
                             .applicationId(testAppIds[index][1])
                             .build();
                     String state = "";
 
-                    do {
-                        ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                                .statistics(stats)
-                                .get();
-                        state = statsResponse.get("0").getState();
-                    } while (state.compareTo("DOWN") == 0);
-
+                    ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
+                            .statistics(stats)
+                            .get();
+                    state = statsResponse.get("0").getState();
+                    
+                    if (state.compareTo("RUNNING") != 0) {
+                        throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(),
+                                "test application has not finished staging", "170002");
+                    }
+                    
                 } catch (CloudFoundryException ce) {
                     log.error("Error in pre scenario execution : " + ce);
                 }
@@ -811,7 +824,7 @@ public class StepDefinitions {
             }
         }
 
-        if (serviceBrokerId != null) {
+        if (serviceBrokerId != null && !brokerAlreadyCreated) {
             cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
                     .serviceBrokerId(serviceBrokerId)
                     .build())
@@ -820,7 +833,7 @@ public class StepDefinitions {
     }
 
     @Before({"@transientOptOut"})
-    public void before_scenario_transientOtpOut() {
+    public void before_scenario_transientOtpOut() throws Throwable {
         before_scenario_register_new_organization();
     }
 
@@ -892,17 +905,24 @@ public class StepDefinitions {
                     .build())
             .get();
 
+            // Wait for application to get to running state
+            Thread.sleep(30000);
+            
             ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
                     .applicationId(testAppIds[index][0])
                     .build();
             String state = "";
 
-            do {
-                ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                        .statistics(stats)
-                        .get();
-                state = statsResponse.get("0").getState();
-            } while (state.compareTo("DOWN") == 0);
+            ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
+                    .statistics(stats)
+                    .get();
+            state = statsResponse.get("0").getState();
+            
+            if (state.compareTo("RUNNING") != 0) {
+                throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(),
+                        "test application has not finished staging", "170002");
+            }
+            
         }
 
         // wait for idle duration time
@@ -958,7 +978,7 @@ public class StepDefinitions {
             .get();
         }
 
-        if (serviceBrokerId != null) {
+        if (serviceBrokerId != null && !brokerAlreadyCreated) {
             cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
                     .serviceBrokerId(serviceBrokerId)
                     .build())
@@ -992,6 +1012,7 @@ public class StepDefinitions {
                     .create(request)
                     .get();
             serviceBrokerId = response.getMetadata().getId();
+            brokerAlreadyCreated = false;
         } else {
             List<ServiceBrokerResource> brokerResource = brokerResponse.getResources();
             for (ServiceBrokerResource serviceBrokerResource : brokerResource) {
@@ -1096,7 +1117,7 @@ public class StepDefinitions {
             .get();
         }
 
-        if (serviceBrokerId != null) {
+        if (serviceBrokerId != null && !brokerAlreadyCreated) {
             cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
                     .serviceBrokerId(serviceBrokerId)
                     .build())
