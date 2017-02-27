@@ -23,10 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationActivity;
 import org.cloudfoundry.autosleep.access.cloudfoundry.model.ApplicationIdentity;
 import org.cloudfoundry.autosleep.access.dao.model.ApplicationInfo;
+import org.cloudfoundry.autosleep.access.dao.model.AutoServiceInstance;
 import org.cloudfoundry.autosleep.config.Config;
 import org.cloudfoundry.autosleep.config.Config.CloudFoundryAppState;
 import org.cloudfoundry.autosleep.config.Config.EnvKey;
 import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
+import org.cloudfoundry.autosleep.access.dao.repositories.AutoServiceInstanceRepository;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.applications.ApplicationInstanceInfo;
 import org.cloudfoundry.client.v2.applications.ApplicationInstancesRequest;
@@ -80,6 +82,7 @@ import reactor.core.publisher.Mono;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -111,11 +114,13 @@ public class CloudFoundryApi implements CloudFoundryApiService {
 
         @Override
         public void onComplete() {
+            System.out.println("******* onComplete");
             latch.countDown();
         }
 
         @Override
         public void onError(Throwable throwable) {
+            System.out.println("****** onError");
             if (errorConsumer != null) {
                 errorConsumer.accept(throwable);
             }
@@ -124,6 +129,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
 
         @Override
         public void onNext(T result) {
+            System.out.println("***** onNext : " + result);
             if (resultConsumer != null) {
                 resultConsumer.accept(result);
             }
@@ -131,6 +137,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
 
         @Override
         public void onSubscribe(Subscription subscription) {
+            System.out.println("*********** onSubscribe");
             subscription.request(Long.MAX_VALUE);
         }
     }
@@ -149,9 +156,13 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     
     @Autowired
     private Environment environment;
+    
+    /*@Autowired
+    private AutoServiceInstanceRepository autoServiceInstanceRepository;*/
 
     private <T, U> void bind(List<T> objectsToBind, Function<T, Mono<U>> caller)
             throws CloudFoundryException {
+        System.out.println("***** inside cfapi bind method");
         log.debug("bind - {} objects", objectsToBind.size());
         final CountDownLatch latch = new CountDownLatch(objectsToBind.size());
         final AtomicReference<Throwable> errorEncountered = new AtomicReference<>(null);
@@ -165,6 +176,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     @Override
     public void bindApplications(String serviceInstanceId, List<ApplicationIdentity> applications) throws
             CloudFoundryException {
+        System.out.println("********* inside cfapi bindApplications method");
         bind(applications,
                 application -> cfClient.serviceBindings()
                         .create(
@@ -176,6 +188,7 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     }
 
     public void bindRoutes(String serviceInstanceId, List<String> routeIds) throws CloudFoundryException {
+        System.out.println("***** inside cfapi bindRoutes method");
         bind(routeIds,
                 routeId -> cfClient.serviceInstances()
                         .bindToRoute(
@@ -460,12 +473,15 @@ public class CloudFoundryApi implements CloudFoundryApiService {
     private <T> T waitForResult(CountDownLatch latch, AtomicReference<Throwable> errorEncountered,
                                 Supplier<T> callback) throws CloudFoundryException {
         try {
+            System.out.println("**** waiting for result");
             if (!latch.await(Config.CF_API_TIMEOUT.getSeconds(), TimeUnit.SECONDS)) {
+                System.out.println("********** subscriber exception");
                 throw new IllegalStateException("subscriber timed out");
             } else if (errorEncountered.get() != null) {
                 throw new CloudFoundryException(errorEncountered.get());
             } else {
                 if (callback != null) {
+                    System.out.println("******** inside wait " + callback);
                     return callback.get();
                 } else {
                     return null;
@@ -562,6 +578,89 @@ public class CloudFoundryApi implements CloudFoundryApiService {
 
         return response;
     }
+    
+    /*private <T, U> void createInstances(List<T> instancesToCreate, Function<T, Mono<U>> caller)
+            throws CloudFoundryException {
+        log.debug("bind - {} objects", instancesToCreate.size());
+        final CountDownLatch latch = new CountDownLatch(instancesToCreate.size());
+        final AtomicReference<Throwable> errorEncountered = new AtomicReference<>(null);
+        final Subscriber<U> subscriber
+                = new BaseSubscriber<>(latch, errorEncountered::set, null);
+
+        instancesToCreate.forEach(instanceToCreate -> caller.apply(instanceToCreate).subscribe(subscriber));
+        waitForResult(latch, errorEncountered, null);
+    }*/
+    
+    @Override
+    public CreateServiceInstanceResponse createServiceInstance(List<EnrolledSpaceConfig> enrolledSpaceConfigs) 
+        throws CloudFoundryException {
+        final CountDownLatch latch = new CountDownLatch(5);
+        final AtomicReference<Throwable> errorEncountered = new AtomicReference<>(null);
+        final AtomicReference<CreateServiceInstanceResponse> instanceResponse = new AtomicReference<>(null);
+        final Subscriber<CreateServiceInstanceResponse> subscriber
+                = new BaseSubscriber<>(latch, errorEncountered::set, instanceResponse::set);
+        
+        List<Map<String, Object>> requestParametersList = new ArrayList<>();
+        
+        enrolledSpaceConfigs.forEach(enrolledSpaceConfig -> {
+            Map<String, Object> requestParameter = new HashMap<>();
+            if (enrolledSpaceConfig.getIdleDuration() != null) {
+                requestParameter.put("idle-duration", enrolledSpaceConfig.getIdleDuration().toString());
+            }
+            requestParameter.put("auto-enrollment", "transitive");
+            requestParametersList.add(requestParameter);
+        });
+        
+        String serviceId = getServiceId();
+        
+        if (serviceId != null) {
+            String servicePlanId = getServicePlanId(serviceId);
+            Iterator<Map<String, Object>> listIterator = requestParametersList.iterator();
+            
+            //enrolledSpaceConfigs.forEach(enrolledSpaceConfig -> {
+                try {
+                    return waitForResult(latch, errorEncountered, () -> {
+                        Mono<CreateServiceInstanceResponse> response = cfClient.serviceInstances()
+                            .create(CreateServiceInstanceRequest.builder()
+                            .spaceId(enrolledSpaceConfigs.get(0).getSpaceId())
+                            .name("autosleep" + System.nanoTime())
+                            .servicePlanId(servicePlanId)
+                            .parameters(listIterator.next())
+                            .build());
+                        response.subscribe(subscriber);
+                        return response.get();});
+                } catch (CloudFoundryException e) {
+                    System.out.println("***** inside catch");
+                    e.printStackTrace();
+                }
+            //});
+            /*createInstances( enrolledSpaceConfigs,
+                        enrolledSpaceconfig -> {
+                            System.out.println("******* space is " + enrolledSpaceconfig.getSpaceId());
+                            Mono<CreateServiceInstanceResponse> response = cfClient.serviceInstances()
+                                .create(CreateServiceInstanceRequest.builder()
+                                        .spaceId(enrolledSpaceconfig.getSpaceId())
+                                        .name("autosleep" + System.nanoTime())
+                                        .servicePlanId(servicePlanId)
+                                        .parameters(listIterator.next())
+                                        .build());
+                            
+                            CreateServiceInstanceResponse instResponse = response.get();
+                            AutoServiceInstance autoInstance = AutoServiceInstance.builder()
+                                    .organizationId(enrolledSpaceconfig.getOrganizationId())
+                                    .serviceInstanceId(instResponse.getMetadata().getId())
+                                    .spaceId(enrolledSpaceconfig.getSpaceId())
+                                    .build();
+                            autoServiceInstanceRepository.save(autoInstance);
+                            return response;
+                            });*/
+            
+        } else {
+            log.error("autosleep service is not available");
+            return null;
+        }
+        return null;
+    }
 
     @Override
     public String getServiceId() throws CloudFoundryException {
@@ -641,5 +740,4 @@ public class CloudFoundryApi implements CloudFoundryApiService {
         }        
         return response;
     }    
-
 }

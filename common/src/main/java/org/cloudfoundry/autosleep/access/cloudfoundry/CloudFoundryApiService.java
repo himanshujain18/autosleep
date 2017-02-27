@@ -25,6 +25,7 @@ import org.cloudfoundry.autosleep.access.dao.model.EnrolledSpaceConfig;
 import org.cloudfoundry.client.v2.organizations.GetOrganizationResponse;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationSpacesResponse;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationsResponse;
+import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
 
 import java.util.List;
@@ -76,5 +77,7 @@ public interface CloudFoundryApiService {
     void unbind(String bindingId) throws CloudFoundryException;
 
     GetOrganizationResponse getOrganizationDetails(String organizationId) 
-            throws org.cloudfoundry.client.v2.CloudFoundryException; 
+            throws org.cloudfoundry.client.v2.CloudFoundryException;
+
+    CreateServiceInstanceResponse createServiceInstance(List<EnrolledSpaceConfig> enrolledSpaceConfigs) throws CloudFoundryException; 
 }

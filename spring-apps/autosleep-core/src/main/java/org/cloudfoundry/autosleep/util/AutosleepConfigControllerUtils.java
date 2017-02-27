@@ -202,7 +202,7 @@ public class AutosleepConfigControllerUtils {
         return existingServiceInstances;
     }
 
-    public void createNewServiceInstances(Collection<String> spaceIds, 
+    /*public void createNewServiceInstances(Collection<String> spaceIds, 
             EnrolledOrganizationConfig enrolledOrganizationConfig) throws CloudFoundryException {
 
         try {
@@ -224,8 +224,34 @@ public class AutosleepConfigControllerUtils {
             log.error("Error in retrieving already enrolled serviceInstances. Error: " + ce);
             throw new CloudFoundryException(ce);
         }
-    }
+    }*/
 
+    public void createNewServiceInstances(Collection<String> spaceIds, 
+            EnrolledOrganizationConfig enrolledOrganizationConfig) throws CloudFoundryException {
+        List<EnrolledSpaceConfig> enrolledSpaceConfigs = new ArrayList<EnrolledSpaceConfig>();
+        try {
+            spaceIds.forEach(space-> {
+                EnrolledSpaceConfig enrolledSpaceConfig = EnrolledSpaceConfig.builder()
+                        .spaceId(space)
+                        .organizationId(enrolledOrganizationConfig.getOrganizationId())
+                        .idleDuration(enrolledOrganizationConfig.getIdleDuration())
+                        .build();
+                enrolledSpaceConfigs.add(enrolledSpaceConfig);
+            });
+            System.out.println("**** enrolled space list size is " + enrolledSpaceConfigs.size());
+            
+            try {
+                cloudFoundryApi.createServiceInstance(enrolledSpaceConfigs);
+            } catch (CloudFoundryException ce) {
+                log.error("Service Instances for new spaces cannot be created. Error: ", ce);
+                throw new RuntimeException(ce);
+            }
+        } catch (RuntimeException ce) {
+            log.error("Error in retrieving already enrolled serviceInstances. Error: " + ce);
+            throw new CloudFoundryException(ce);
+        }
+    }
+    
     public void updateServiceInstances(Map<String,SpaceEnrollerConfig> existingServiceInstances,
             List<String> spaceIds, EnrolledOrganizationConfig enrolledOrganizationConfig) 
                     throws CloudFoundryException {
