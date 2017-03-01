@@ -1,6 +1,6 @@
 package org.cloudfoundry.autosleep.test;
 
-import static org.junit.Assert.assertEquals;         
+import static org.junit.Assert.assertEquals;          
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,57 +17,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.cloudfoundry.client.v2.CloudFoundryException;
-import org.cloudfoundry.client.v2.applications.ApplicationStatisticsRequest;
 import org.cloudfoundry.client.v2.applications.ApplicationStatisticsResponse;
-import org.cloudfoundry.client.v2.applications.CreateApplicationRequest;
 import org.cloudfoundry.client.v2.applications.CreateApplicationResponse;
-import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
-import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsRequest;
 import org.cloudfoundry.client.v2.applications.ListApplicationServiceBindingsResponse;
-import org.cloudfoundry.client.v2.applications.UpdateApplicationRequest;
-import org.cloudfoundry.client.v2.applications.UploadApplicationRequest;
-import org.cloudfoundry.client.v2.domains.ListDomainsRequest;
 import org.cloudfoundry.client.v2.domains.ListDomainsResponse;
-import org.cloudfoundry.client.v2.organizations.ListOrganizationsRequest;
 import org.cloudfoundry.client.v2.organizations.ListOrganizationsResponse;
 import org.cloudfoundry.client.v2.organizations.OrganizationResource;
-import org.cloudfoundry.client.v2.routes.AssociateRouteApplicationRequest;
-import org.cloudfoundry.client.v2.routes.CreateRouteRequest;
 import org.cloudfoundry.client.v2.routes.CreateRouteResponse;
-import org.cloudfoundry.client.v2.routes.DeleteRouteRequest;
-import org.cloudfoundry.client.v2.servicebindings.DeleteServiceBindingRequest;
-import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerRequest;
 import org.cloudfoundry.client.v2.servicebrokers.CreateServiceBrokerResponse;
-import org.cloudfoundry.client.v2.servicebrokers.DeleteServiceBrokerRequest;
-import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersRequest;
 import org.cloudfoundry.client.v2.servicebrokers.ListServiceBrokersResponse;
 import org.cloudfoundry.client.v2.servicebrokers.ServiceBrokerResource;
-import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceRequest;
 import org.cloudfoundry.client.v2.serviceinstances.CreateServiceInstanceResponse;
-import org.cloudfoundry.client.v2.serviceinstances.DeleteServiceInstanceRequest;
-import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsRequest;
 import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstanceServiceBindingsResponse;
-import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstancesRequest;
 import org.cloudfoundry.client.v2.serviceinstances.ListServiceInstancesResponse;
-import org.cloudfoundry.client.v2.serviceplans.ListServicePlansRequest;
 import org.cloudfoundry.client.v2.serviceplans.ListServicePlansResponse;
 import org.cloudfoundry.client.v2.serviceplans.ServicePlanResource;
-import org.cloudfoundry.client.v2.serviceplanvisibilities.CreateServicePlanVisibilityRequest;
 import org.cloudfoundry.client.v2.serviceplanvisibilities.CreateServicePlanVisibilityResponse;
-import org.cloudfoundry.client.v2.serviceplanvisibilities.DeleteServicePlanVisibilityRequest;
-import org.cloudfoundry.client.v2.services.ListServicesRequest;
 import org.cloudfoundry.client.v2.services.ListServicesResponse;
 import org.cloudfoundry.client.v2.services.ServiceResource;
-import org.cloudfoundry.client.v2.spaces.CreateSpaceRequest;
 import org.cloudfoundry.client.v2.spaces.CreateSpaceResponse;
-import org.cloudfoundry.client.v2.spaces.DeleteSpaceRequest;
-import org.cloudfoundry.client.v2.spaces.ListSpacesRequest;
 import org.cloudfoundry.client.v2.spaces.ListSpacesResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.cloudfoundry.autosleep.config.CloudfoundryClientBuilder;
-import org.cloudfoundry.client.CloudFoundryClient;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import cucumber.api.java.After;
@@ -80,46 +51,42 @@ public class StepDefinitions {
 
     private static final Logger log = LoggerFactory.getLogger(StepDefinitions.class);
 
-    private static String autosleepUrl;
-    private static String domainName;
-    private static String securityUsername;
-    private static String securityUserPassword;
-    private static String serviceBrokerName;
-    private static String cfUsername;
-    private static String cfUserPassword;
-    private static String[] organizationNames;
-    private static String[] organizationIds;
-    private static String[][] spaceIds;
-    private static String[][] testAppIds;
-    private static String[][] routeIds;
+    private String autosleepUrl;
+    private String domainName;
+    private String securityUsername;
+    private String securityUserPassword;
+    private String serviceBrokerName;
+    private String cfUsername;
+    private String cfUserPassword;
+    private String[] organizationNames;
+    private String[] organizationIds;
+    private String[][] spaceIds;
+    private String[][] testAppIds;
+    private String[][] routeIds;
 
-    private static int[] status;
-    private static String[] result;
-    private static int instanceCount;
-    private static String[] planVisibilityGuids;
-    private static String serviceBrokerId;
-    private static String servicePlanId;
-    private static String[] serviceInstanceIds;
-    private static boolean brokerAlreadyCreated;
+    private int[] status;
+    private String[] result;
+    private int instanceCount;
+    private String[] planVisibilityGuids;
+    private String serviceBrokerId;
+    private String servicePlanId;
+    private String[] serviceInstanceIds;
+    private boolean brokerAlreadyCreated;
 
-    private static InputStream inputStream;
+    private InputStream inputStream;
 
-    private static CloudfoundryClientBuilder builder;
-    private static CloudFoundryClient cfclient;
-
+    private CloudFoundryApi cfapi;
+    
     @Before({"@start"})
-    public static void before() {
+    public void before() {
 
         log.info("Reading parameters from Properties file");
-
-        builder = new CloudfoundryClientBuilder();
-        cfclient = builder.getClient();
 
         try {
             Properties prop = new Properties();
             String fileName = "config.properties";
 
-            inputStream = StepDefinitions.class.getClassLoader().getResourceAsStream(fileName);
+            inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
 
             if (inputStream != null) {
                 prop.load(inputStream);
@@ -136,43 +103,20 @@ public class StepDefinitions {
             serviceBrokerName = prop.getProperty("serviceBrokerName");
             organizationNames  = prop.getProperty("organizationName").split(",");
 
-            if (organizationIds == null) {
-                organizationIds  = new String[organizationNames.length];
-            }
-
-            if (spaceIds == null) {
-                spaceIds = new String[organizationIds.length][2];
-            }
-
-            if (testAppIds == null) {
-                testAppIds = new String[organizationIds.length][2];
-            }
-
-            if (routeIds == null) {
-                routeIds = new String[organizationIds.length][2];
-            }
-
-            if (planVisibilityGuids == null) {
-                planVisibilityGuids = new String[organizationIds.length];
-            }
-
-            if (status == null) {
-                status = new int[organizationNames.length];
-            }
-
-            if (result == null) {
-                result = new String[organizationNames.length];
-            }
-            if (serviceInstanceIds == null) {
-                serviceInstanceIds = new String[organizationNames.length];
-            }
-
+            organizationIds  = new String[organizationNames.length];
+            spaceIds = new String[organizationIds.length][2];
+            testAppIds = new String[organizationIds.length][2];
+            routeIds = new String[organizationIds.length][2];
+            planVisibilityGuids = new String[organizationIds.length];
+            status = new int[organizationNames.length];
+            result = new String[organizationNames.length];
+            serviceInstanceIds = new String[organizationNames.length];
             instanceCount = 0;
             brokerAlreadyCreated = true;
 
-            ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
-            ListOrganizationsResponse response = cfclient.organizations().list(request).get();
-
+            cfapi = new CloudFoundryApi();
+            ListOrganizationsResponse response = cfapi.listOrganizations();
+            
             for (int index = 0; index < organizationNames.length; index++) {
                 for (OrganizationResource resource : response.getResources()) {
                     if ( organizationNames[index].compareTo(resource.getEntity().getName()) == 0) {
@@ -187,13 +131,12 @@ public class StepDefinitions {
         }
     }
 
-    public static String getServiceId() throws CloudFoundryException {
+    public String getServiceId() throws CloudFoundryException {
         ListServicesResponse response;
         String serviceId = null;
 
         try {
-            ListServicesRequest request = ListServicesRequest.builder().label(getServiceName()).build();    
-            response = cfclient.services().list(request).get();        
+            response = cfapi.listServices(getServiceName());  
             List<ServiceResource> serviceResources = response.getResources();
 
             if (serviceResources.size() != 0) {
@@ -205,12 +148,11 @@ public class StepDefinitions {
         return serviceId;
     }
 
-    public static String getServicePlanId(String serviceId) throws CloudFoundryException {
+    public String getServicePlanId(String serviceId) throws CloudFoundryException {
         String servicePlanId = null;   
         try {
             if (serviceId != null) {
-                ListServicePlansRequest request = ListServicePlansRequest.builder().serviceId(serviceId).build();
-                ListServicePlansResponse response = cfclient.servicePlans().list(request).get();
+                ListServicePlansResponse response = cfapi.listServicePlan(serviceId);
                 List<ServicePlanResource> servicePlanResource = response.getResources();           
 
                 if (servicePlanResource.size() != 0) {                 
@@ -227,7 +169,7 @@ public class StepDefinitions {
         return servicePlanId;
     }
 
-    public static String getServiceName() {
+    public String getServiceName() {
         log.info("Fetching catalog");
 
         String auth = securityUsername + ":" + securityUserPassword;
@@ -258,38 +200,23 @@ public class StepDefinitions {
         }
         return serviceName;
     }
-        
-    @Given("^a cloud foundry landscape with autosleep application deployed on it$")
-    public void given_state() {
-        log.info("Autosleep application is deployed on Cloud Foundry instance");
-    }
 
     @Before({"@registerNewOrganization"})
-    public static void before_scenario_register_new_organization() throws Throwable {
+    public void before_scenario_register_new_organization() throws Throwable {
         log.info("Before scenario execution");
 
-        ListServiceBrokersRequest brokerRequest = ListServiceBrokersRequest.builder()
-                .build();
+        
 
-        ListServiceBrokersResponse brokerResponse = cfclient.serviceBrokers()
-                .list(brokerRequest)
-                .get();
+        ListServiceBrokersResponse brokerResponse = cfapi.listServiceBroker();
 
         String serviceId = "";
         if (brokerResponse.getTotalResults() == 0) {
             log.error("Service broker with name : " + serviceBrokerName + " does not exists");
             log.info("creating service broker");
 
-            CreateServiceBrokerRequest request = CreateServiceBrokerRequest.builder()
-                    .brokerUrl(autosleepUrl)
-                    .name(serviceBrokerName)
-                    .authenticationUsername(cfUsername)
-                    .authenticationPassword(cfUserPassword)
-                    .build();
-
-            CreateServiceBrokerResponse response = cfclient.serviceBrokers()
-                    .create(request)
-                    .get();
+            CreateServiceBrokerResponse response = cfapi
+                    .createServiceBroker(autosleepUrl, serviceBrokerName, cfUsername, cfUserPassword);
+            
             serviceBrokerId = response.getMetadata().getId();
             brokerAlreadyCreated = false;
         } else {
@@ -306,89 +233,43 @@ public class StepDefinitions {
 
         for (int index = 0; index < organizationIds.length; index++) {
             if (organizationIds[index] != null) {
-                ListDomainsResponse dom = cfclient.domains()
-                        .list(ListDomainsRequest.builder()
-                                .name(domainName)
-                                .build())
-                        .get();
+                ListDomainsResponse domainResponse = cfapi.listDomain(domainName);
 
-                String domainId = dom.getResources().get(0).getMetadata().getId();
+                String domainId = domainResponse.getResources().get(0).getMetadata().getId();
 
                 serviceId = getServiceId();
 
                 if (serviceId != null) {
                     servicePlanId = getServicePlanId(serviceId);
-                    CreateServicePlanVisibilityResponse visibilityResponse = cfclient.servicePlanVisibilities()
-                            .create(CreateServicePlanVisibilityRequest.builder()
-                                    .servicePlanId(servicePlanId)
-                                    .organizationId(organizationIds[index])
-                                    .build())
-                            .get();
+                    CreateServicePlanVisibilityResponse visibilityResponse = cfapi
+                            .createServicePlanVisibility(servicePlanId, organizationIds[index]);
 
                     planVisibilityGuids[index] = visibilityResponse.getMetadata().getId();
 
                     try {
-                        CreateSpaceResponse spaceResponse = cfclient.spaces()
-                                .create(CreateSpaceRequest.builder()
-                                        .organizationId(organizationIds[index])
-                                        .name("space" + System.nanoTime())
-                                        .build())
-                                .get();
-
+                        CreateSpaceResponse spaceResponse = cfapi
+                                .createSpace(organizationIds[index], "space" + System.nanoTime());
                         spaceIds[index][0] = spaceResponse.getMetadata().getId();
 
-                        CreateApplicationResponse appResponse = cfclient.applicationsV2()
-                                .create(CreateApplicationRequest.builder()
-                                        .name("test-app")
-                                        .memory(256)
-                                        .spaceId(spaceIds[index][0])
-                                        .buildpack("nodejs_buildpack")
-                                        .build())
-                                .get();
-
+                        CreateApplicationResponse appResponse = cfapi
+                                .createApplication("test-app", 256, spaceIds[index][0], "nodejs_buildpack");
                         testAppIds[index][0] = appResponse.getMetadata().getId();
+                        cfapi.uploadApplication(getClass().getClassLoader().getResourceAsStream("test-app.zip"), 
+                                testAppIds[index][0]);
+                        
+                        CreateRouteResponse routeResponse = cfapi
+                                .createRoute(domainId, spaceIds[index][0], "test-app" + System.nanoTime());
 
-                        cfclient.applicationsV2()
-                        .upload(UploadApplicationRequest.builder()
-                                .application(StepDefinitions.class.getClassLoader().getResourceAsStream("test-app.zip"))
-                                .applicationId(testAppIds[index][0])
-                                .build())
-                            .get();
-
-                        CreateRouteResponse route = cfclient.routes()
-                                .create(CreateRouteRequest.builder()
-                                        .domainId(domainId)
-                                        .spaceId(spaceIds[index][0])
-                                        .host("test-app" + System.nanoTime())
-                                        .build())
-                                .get();
-
-                        routeIds[index][0] = route.getMetadata().getId();
-
-                        cfclient.routes()
-                        .associateApplication(AssociateRouteApplicationRequest.builder()
-                                .applicationId(testAppIds[index][0])
-                                .routeId(routeIds[index][0])
-                                .build())
-                            .get();
-
-                        cfclient.applicationsV2().update(UpdateApplicationRequest.builder()
-                                .applicationId(testAppIds[index][0])
-                                .state("STARTED")
-                                .build())
-                        .get();
-
+                        routeIds[index][0] = routeResponse.getMetadata().getId();
+                        cfapi.associateRouteApplication(testAppIds[index][0], routeIds[index][0]);
+                        cfapi.updateApplicationState(testAppIds[index][0], "STARTED");
+                        
                         // Wait for application to get to running state
                         Thread.sleep(30000);
                         
-                        ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
-                                .applicationId(testAppIds[index][0])
-                                .build();
                         String state = "";
 
-                        ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                                .statistics(stats)
-                                .get();
+                        ApplicationStatisticsResponse statsResponse = cfapi.applicationStatistics(testAppIds[index][0]);
                         state = statsResponse.get("0").getState();
                         
                         if (state.compareTo("RUNNING") != 0) {
@@ -407,6 +288,91 @@ public class StepDefinitions {
                         "Organization : \"" + organizationNames[index] + "\" could not be found", "30003");
             }
         }
+    }
+    
+    @Before({"@OrganizationFound"})
+    public void before_scenario_get_enrolled_organization() throws Throwable {
+        before_scenario_register_new_organization();
+        an_organization_is_enrolled_with_autosleep();
+    }
+    
+    @Before({"@updateAlreadyEnrolledOrganization"})
+    public void before_scenario_update_enrolled_organization() throws Throwable {
+        before_scenario_register_new_organization();
+        an_organization_is_enrolled_with_autosleep();
+        
+        for (int index = 0; index < organizationIds.length; index++) {
+            if (organizationIds[index] != null) {
+                ListDomainsResponse domainResponse = cfapi.listDomain(domainName);
+
+                String domainId = domainResponse.getResources().get(0).getMetadata().getId();
+
+                try {
+                    CreateSpaceResponse spaceResponse = cfapi
+                            .createSpace(organizationIds[index], "space" + System.nanoTime());
+
+                    spaceIds[index][1] = spaceResponse.getMetadata().getId();
+
+                    CreateApplicationResponse appResponse = cfapi
+                            .createApplication("test-app", 256, spaceIds[index][1], "nodejs_buildpack");
+
+                    testAppIds[index][1] = appResponse.getMetadata().getId();
+
+                    cfapi.uploadApplication(getClass().getClassLoader().getResourceAsStream("test-app.zip"),
+                            testAppIds[index][1]);
+                    
+                    CreateRouteResponse routeResponse = cfapi
+                            .createRoute(domainId, spaceIds[index][1], "test-app" + System.nanoTime());
+
+                    routeIds[index][1] = routeResponse.getMetadata().getId();
+
+                    cfapi.associateRouteApplication(testAppIds[index][1], routeIds[index][1]);
+                    cfapi.updateApplicationState(testAppIds[index][1], "STARTED");
+                    
+                    // Wait for application to get to running state
+                    Thread.sleep(30000);
+                    
+                    String state = "";
+
+                    ApplicationStatisticsResponse statsResponse = cfapi.applicationStatistics(testAppIds[index][1]);
+                    state = statsResponse.get("0").getState();
+                    
+                    if (state.compareTo("RUNNING") != 0) {
+                        throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(),
+                                "test application has not finished staging", "170002");
+                    }
+                    
+                } catch (CloudFoundryException ce) {
+                    log.error("Error in pre scenario execution : " + ce);
+                }
+
+            } else {
+                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
+                        "Organization : \"" + organizationNames[index] + "\" could not be found", "30003");
+            }
+        }
+    }
+    
+    @Before({"@OrganizationFoundForUnenroll"})
+    public void before_scenario_unenroll_an_organization() throws Throwable {
+        before_scenario_register_new_organization();
+        an_organization_is_enrolled_with_autosleep();
+        Thread.sleep(20000);
+    }
+    
+    @Before({"@OrganizationNotFound"})
+    public void before_scenario_fail_to_retrieve_details_of_an_organization() throws Throwable {
+        before_scenario_register_new_organization();
+    }
+    
+    @Before({"@OrganizationNotFoundForUnenroll"})
+    public void before_scenario_fail_to_unenroll_an_organization() throws Throwable {
+        before_scenario_register_new_organization();
+    }
+    
+    @Given("^a cloud foundry landscape with autosleep application deployed on it$")
+    public void given_state() {
+        log.info("Autosleep application is deployed on Cloud Foundry instance");
     }
 
     @When("^an organization is enrolled with autosleep$")
@@ -441,18 +407,14 @@ public class StepDefinitions {
     }
 
     @Then("^service instances are created in all spaces of the organization$")
-    public static void service_instances_are_created_in_all_spaces_of_the_organization() throws Throwable {
+    public void service_instances_are_created_in_all_spaces_of_the_organization() throws Throwable {
 
         for (int index = 0; index < organizationIds.length; index++) {
             Thread.currentThread();
             Thread.sleep(30000);
             if (organizationIds[index] != null) {
-                ListServiceInstancesResponse response = cfclient.serviceInstances()
-                        .list(ListServiceInstancesRequest.builder()
-                                .organizationId(organizationIds[index])
-                                .spaceId(spaceIds[index][0])
-                                .build())
-                        .get();
+                ListServiceInstancesResponse response = cfapi
+                        .listServiceInstance(organizationIds[index], spaceIds[index][0]);
                 instanceCount = response.getTotalResults();
 
                 assertEquals(1, instanceCount);
@@ -460,46 +422,30 @@ public class StepDefinitions {
                 throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
                         "Organization : \"" + organizationNames[index] + "\" could not be found", "30003");
             }
-        }        
+        }
     }
 
     @Then("^applications in the spaces are bounded with the service instance$")
     public void applications_in_the_spaces_are_bounded_with_the_service_instance() throws Throwable {
 
         for (int index = 0; index < organizationIds.length; index++) {
-            ListApplicationServiceBindingsRequest appBindRequest = ListApplicationServiceBindingsRequest.builder()
-                    .applicationId(testAppIds[index][0])
-                    .build();
 
-            ListApplicationServiceBindingsResponse appBindRes = cfclient.applicationsV2()
-                    .listServiceBindings(appBindRequest)
-                    .get();
+            ListApplicationServiceBindingsResponse appBindResponse = cfapi
+                    .listApplicationServiceBindings(testAppIds[index][0]);
 
-            String serviceBindingIdForApp = appBindRes.getResources().get(0).getMetadata().getId();
+            String serviceBindingIdForApp = appBindResponse.getResources().get(0).getMetadata().getId();
 
-            ListSpacesResponse spaceRes = cfclient.spaces()
-                    .list(ListSpacesRequest.builder()
-                            .organizationId(organizationIds[index])
-                            .applicationId(testAppIds[index][0])
-                            .build())
-                    .get();
+            ListSpacesResponse spaceResponse = cfapi.listSpaces(organizationIds[index], testAppIds[index][0]);
 
-            spaceIds[index][0] = spaceRes.getResources().get(0).getMetadata().getId();
+            spaceIds[index][0] = spaceResponse.getResources().get(0).getMetadata().getId();
 
-            ListServiceInstancesResponse instanceRes = cfclient.serviceInstances()
-                    .list(ListServiceInstancesRequest.builder()
-                            .organizationId(organizationIds[index])
-                            .spaceId(spaceIds[index][0])
-                            .build())
-                    .get();
+            ListServiceInstancesResponse instanceResponse = cfapi
+                    .listServiceInstance(organizationIds[index], spaceIds[index][0]);
 
-            String instanceId = instanceRes.getResources().get(0).getMetadata().getId();
+            String instanceId = instanceResponse.getResources().get(0).getMetadata().getId();
 
-            ListServiceInstanceServiceBindingsResponse bindRes = cfclient.serviceInstances()
-                    .listServiceBindings(ListServiceInstanceServiceBindingsRequest.builder()
-                            .serviceInstanceId(instanceId)
-                            .build())
-                    .get();
+            ListServiceInstanceServiceBindingsResponse bindRes = cfapi
+                    .listServiceInstanceServiceBindings(instanceId);
 
             String serviceBindingIdForInstance = bindRes.getResources().get(0).getMetadata().getId();
 
@@ -563,100 +509,6 @@ public class StepDefinitions {
             assertEquals(expectedStatus, status[index]);
         }
     }
-
-    @Before({"@updateAlreadyEnrolledOrganization"})
-    public void before_scenario_update_enrolled_organization() throws Throwable {
-        log.info("Before scenario register new organization");
-
-        for (int index = 0; index < organizationIds.length; index++) {
-            if (organizationIds[index] != null) {
-                ListDomainsResponse dom = cfclient.domains()
-                        .list(ListDomainsRequest.builder()
-                                .name(domainName)
-                                .build())
-                        .get();
-
-                String domainId = dom.getResources().get(0).getMetadata().getId();
-
-                try {
-                    CreateSpaceResponse spaceResponse = cfclient.spaces()
-                            .create(CreateSpaceRequest.builder()
-                                    .organizationId(organizationIds[index])
-                                    .name("space" + System.nanoTime())
-                                    .build())
-                            .get();
-
-                    spaceIds[index][1] = spaceResponse.getMetadata().getId();
-
-                    CreateApplicationResponse appResponse = cfclient.applicationsV2()
-                            .create(CreateApplicationRequest.builder()
-                                    .name("test-app")
-                                    .memory(256)
-                                    .spaceId(spaceIds[index][1])
-                                    .buildpack("nodejs_buildpack")
-                                    .build())
-                            .get();
-
-                    testAppIds[index][1] = appResponse.getMetadata().getId();
-
-                    cfclient.applicationsV2()
-                    .upload(UploadApplicationRequest.builder()
-                            .application(getClass().getClassLoader().getResourceAsStream("test-app.zip"))
-                            .applicationId(testAppIds[index][1])
-                            .build())
-                        .get();
-
-                    CreateRouteResponse route = cfclient.routes()
-                            .create(CreateRouteRequest.builder()
-                                    .domainId(domainId)
-                                    .spaceId(spaceIds[index][1])
-                                    .host("test-app" + System.nanoTime())
-                                    .build())
-                            .get();
-
-                    routeIds[index][1] = route.getMetadata().getId();
-
-                    cfclient.routes()
-                    .associateApplication(AssociateRouteApplicationRequest.builder()
-                            .applicationId(testAppIds[index][1])
-                            .routeId(routeIds[index][1])
-                            .build())
-                        .get();
-
-                    cfclient.applicationsV2().update(UpdateApplicationRequest.builder()
-                            .applicationId(testAppIds[index][1])
-                            .state("STARTED")
-                            .build())
-                    .get();
-
-                    // Wait for application to get to running state
-                    Thread.sleep(30000);
-                    
-                    ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
-                            .applicationId(testAppIds[index][1])
-                            .build();
-                    String state = "";
-
-                    ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                            .statistics(stats)
-                            .get();
-                    state = statsResponse.get("0").getState();
-                    
-                    if (state.compareTo("RUNNING") != 0) {
-                        throw new CloudFoundryException(HttpStatus.BAD_REQUEST.value(),
-                                "test application has not finished staging", "170002");
-                    }
-                    
-                } catch (CloudFoundryException ce) {
-                    log.error("Error in pre scenario execution : " + ce);
-                }
-
-            } else {
-                throw new CloudFoundryException(HttpStatus.NOT_FOUND.value(),
-                        "Organization : \"" + organizationNames[index] + "\" could not be found", "30003");
-            }
-        }
-    }
     
     @Given("^an organization is already enrolled with autosleep and service instances are "
             + "running in its each space as per previous enrollment$")
@@ -696,29 +548,21 @@ public class StepDefinitions {
     }
     
     @Then("^service instances are updated in all spaces of the organization as per latest enrollment$")
-    public static void service_instances_are_updated_in_all_spaces_of_the_organization() throws Throwable {
+    public void service_instances_are_updated_in_all_spaces_of_the_organization() throws Throwable {
 
         Thread.currentThread();
         Thread.sleep(30000);
 
         for (int index = 0; index < organizationIds.length; index++) {
             if (organizationIds[index] != null) {
-                ListServiceInstancesResponse responseForFirstSpace = cfclient.serviceInstances()
-                        .list(ListServiceInstancesRequest.builder()
-                                .organizationId(organizationIds[index])
-                                .spaceId(spaceIds[index][0])
-                                .build())
-                        .get();
+                ListServiceInstancesResponse responseForFirstSpace = cfapi
+                        .listServiceInstance(organizationIds[index], spaceIds[index][0]);
                 instanceCount = responseForFirstSpace.getTotalResults();
 
                 assertEquals(1, instanceCount);
 
-                ListServiceInstancesResponse responseForSecondSpace = cfclient.serviceInstances()
-                        .list(ListServiceInstancesRequest.builder()
-                                .organizationId(organizationIds[index])
-                                .spaceId(spaceIds[index][1])
-                                .build())
-                        .get();
+                ListServiceInstancesResponse responseForSecondSpace = cfapi
+                        .listServiceInstance(organizationIds[index], spaceIds[index][1]);
                 instanceCount = responseForSecondSpace.getTotalResults();
 
                 assertEquals(1, instanceCount);
@@ -762,29 +606,15 @@ public class StepDefinitions {
     }
     
     @Then("^service instances are deleted from all of its spaces$")
-    public static void service_instances_are_deleted() throws Throwable {
+    public void service_instances_are_deleted() throws Throwable {
 
         log.info("Check for service instances after unenrolling");
 
         for (int index = 0; index < organizationIds.length; index++) {
             if (organizationIds[index] != null) {
-                ListServiceInstancesResponse responseForFirstSpace = cfclient.serviceInstances()
-                        .list(ListServiceInstancesRequest.builder()
-                                .organizationId(organizationIds[index])
-                                .spaceId(spaceIds[index][0])
-                                .build())
-                        .get();
+                ListServiceInstancesResponse responseForFirstSpace = cfapi
+                        .listServiceInstance(organizationIds[index], spaceIds[index][0]);
                 instanceCount = responseForFirstSpace.getTotalResults();
-
-                assertEquals(0, instanceCount);
-
-                ListServiceInstancesResponse responseForSecondSpace = cfclient.serviceInstances()
-                        .list(ListServiceInstancesRequest.builder()
-                                .organizationId(organizationIds[index])
-                                .spaceId(spaceIds[index][1])
-                                .build())
-                        .get();
-                instanceCount = responseForSecondSpace.getTotalResults();
 
                 assertEquals(0, instanceCount);
             } else {
@@ -794,44 +624,113 @@ public class StepDefinitions {
         }
     }
     
-    @After({"@OrganizationNotFoundForUnenroll"})
-    public void after_scenario_register_new_organization() {
+    @After({"@registerNewOrganization"})
+    public void after_scenario_register_new_organization() throws Throwable {
         log.info("Executing post scenario");
 
-        for (int index = 0; index < organizationIds.length; index++) {
+        int index = 0;
 
-            cfclient.servicePlanVisibilities()
-            .delete(DeleteServicePlanVisibilityRequest.builder()
-                    .servicePlanVisibilityId(planVisibilityGuids[index])
-                    .build())
-                .get();
+        String auth = securityUsername + ":" + securityUserPassword;
 
-            for (int i = 0; i < 2; i++) {
-                cfclient.routes().delete(DeleteRouteRequest.builder()
-                        .routeId(routeIds[index][i])
-                        .build())
-                .get();
+        HttpHeaders header = new HttpHeaders();
+        header.add("Authorization", "Basic " + java.util.Base64.getEncoder()
+                .encodeToString(auth.getBytes(StandardCharsets.UTF_8)));
+        header.add("Content-Type", "application/json");
 
-                cfclient.applicationsV2().delete(DeleteApplicationRequest.builder()
-                        .applicationId(testAppIds[index][i])
-                        .build())
-                .get();
+        for (index = 0; index < organizationNames.length; index++) {
+            try {    
+                RestTemplate rest = new RestTemplate();
+                HttpEntity<String> requestEntity = new HttpEntity<String>("", header);
+                ResponseEntity<String> response = rest.exchange(autosleepUrl + "/v1/enrolled-orgs/" 
+                        + organizationIds[index], HttpMethod.DELETE, requestEntity, String.class);
 
-                cfclient.spaces().delete(DeleteSpaceRequest.builder()
-                        .spaceId(spaceIds[index][i])
-                        .build())
-                .get();
+                log.info("Post scenario execution completed. Status : " + response.getStatusCode().value());
+            } catch (HttpClientErrorException e) {
+                log.error("Error completing post scenario execution : " + e);
+            } catch (RuntimeException e) {
+                log.error("Error completing post scenario execution : " + e);
+            }
+        }
+        
+        for (index = 0; index < organizationIds.length; index++) {
+            cfapi.deleteServicePlanVisibility(planVisibilityGuids[index]);
+            
+            for (int i = 0; i < 1; i++) {
+                cfapi.deleteRoute(routeIds[index][i]);
+                cfapi.deleteApplication(testAppIds[index][i]);
+                cfapi.deleteSpace(spaceIds[index][i]);
             }
         }
 
         if (serviceBrokerId != null && !brokerAlreadyCreated) {
-            cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
-                    .serviceBrokerId(serviceBrokerId)
-                    .build())
-            .get();
+            cfapi.deleteServiceBroker(serviceBrokerId); 
         }
     }
+    
+    @After({"@OrganizationFound"})
+    public void after_scenario_get_enrolled_organization() throws Throwable {
+        after_scenario_register_new_organization();
+    }
 
+    @After({"@updateAlreadyEnrolledOrganization"})
+    public void after_scenario_update_enrolled_organization() throws Throwable {
+        log.info("Executing post scenario");
+
+        int index = 0;
+
+        String auth = securityUsername + ":" + securityUserPassword;
+
+        HttpHeaders header = new HttpHeaders();
+        header.add("Authorization", "Basic " + java.util.Base64.getEncoder()
+                .encodeToString(auth.getBytes(StandardCharsets.UTF_8)));
+        header.add("Content-Type", "application/json");
+
+        for (index = 0; index < organizationNames.length; index++) {
+            try {    
+                RestTemplate rest = new RestTemplate();
+                HttpEntity<String> requestEntity = new HttpEntity<String>("", header);
+                ResponseEntity<String> response = rest.exchange(autosleepUrl + "/v1/enrolled-orgs/" 
+                        + organizationIds[index], HttpMethod.DELETE, requestEntity, String.class);
+
+                log.info("Post scenario execution completed. Status : " + response.getStatusCode().value());
+            } catch (HttpClientErrorException e) {
+                log.error("Error completing post scenario execution : " + e);
+            } catch (RuntimeException e) {
+                log.error("Error completing post scenario execution : " + e);
+            }
+        }
+        
+        for (index = 0; index < organizationIds.length; index++) {
+
+            cfapi.deleteServicePlanVisibility(planVisibilityGuids[index]);
+            
+            for (int i = 0; i < 2; i++) {
+                cfapi.deleteRoute(routeIds[index][i]);
+                cfapi.deleteApplication(testAppIds[index][i]);
+                cfapi.deleteSpace(spaceIds[index][i]);
+            }
+        }
+
+        if (serviceBrokerId != null && !brokerAlreadyCreated) {
+            cfapi.deleteServiceBroker(serviceBrokerId);
+        }
+    }
+    
+    @After({"@OrganizationFoundForUnenroll"})
+    public void after_scenario_unenroll_an_organization() throws Throwable {
+        after_scenario_register_new_organization();
+    }
+    
+    @After({"@OrganizationNotFound"})
+    public void after_scenario_fail_to_retrieve_details_of_an_organization() throws Throwable {
+        after_scenario_register_new_organization();
+    }
+    
+    @After({"@OrganizationNotFoundForUnenroll"})
+    public void after_scenario_fail_to_unenroll_an_organization() throws Throwable {
+        after_scenario_register_new_organization();
+    }
+    
     @Before({"@transientOptOut"})
     public void before_scenario_transientOtpOut() throws Throwable {
         before_scenario_register_new_organization();
@@ -848,15 +747,9 @@ public class StepDefinitions {
         for (int index = 0; index < organizationIds.length; index++) {
 
             try {
-                CreateServiceInstanceRequest request = CreateServiceInstanceRequest.builder()
-                        .name("autosleep" + System.nanoTime())
-                        .spaceId(spaceIds[index][0])
-                        .servicePlanId(servicePlanId)
-                        .parameters(requestParameters)
-                        .build();
-                CreateServiceInstanceResponse response = cfclient.serviceInstances()
-                        .create(request)
-                        .get();
+                CreateServiceInstanceResponse response = cfapi
+                        .createServiceInstance("autosleep" + System.nanoTime(), spaceIds[index][0],
+                                servicePlanId, requestParameters);
 
                 serviceInstanceIds[index] = response.getMetadata().getId();
                 // Delay for binding to be done with the test application
@@ -877,19 +770,11 @@ public class StepDefinitions {
     @When("^the application is unbinded from the service instance$")
     public void the_application_is_unbinded_from_service_instance() throws Throwable {
         for (int index = 0; index < organizationIds.length; index++) {
-            ListServiceInstanceServiceBindingsRequest request = ListServiceInstanceServiceBindingsRequest.builder()
-                    .serviceInstanceId(serviceInstanceIds[index])
-                    .build();
-            ListServiceInstanceServiceBindingsResponse response = cfclient.serviceInstances()
-                    .listServiceBindings(request)
-                    .get();
+            ListServiceInstanceServiceBindingsResponse response = cfapi
+                    .listServiceInstanceServiceBindings(serviceInstanceIds[index]);
 
             String binding = response.getResources().get(0).getMetadata().getId();
-
-            DeleteServiceBindingRequest deleteBinding = DeleteServiceBindingRequest.builder()
-                    .serviceBindingId(binding)
-                    .build();
-            cfclient.serviceBindings().delete(deleteBinding).get();
+            cfapi.deleteServiceBinding(binding);
 
         }
     }
@@ -898,24 +783,14 @@ public class StepDefinitions {
     public void application_gets_bounded_with_the_service_instance_in_next_scan() throws Throwable {
 
         for (int index = 0; index < organizationIds.length; index++) {
-
-            cfclient.applicationsV2().update(UpdateApplicationRequest.builder()
-                    .applicationId(testAppIds[index][0])
-                    .state("STARTED")
-                    .build())
-            .get();
-
+            cfapi.updateApplicationState(testAppIds[index][0], "STARTED");
+            
             // Wait for application to get to running state
             Thread.sleep(30000);
             
-            ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
-                    .applicationId(testAppIds[index][0])
-                    .build();
             String state = "";
-
-            ApplicationStatisticsResponse statsResponse = cfclient.applicationsV2()
-                    .statistics(stats)
-                    .get();
+            
+            ApplicationStatisticsResponse statsResponse = cfapi.applicationStatistics(testAppIds[index][0]);
             state = statsResponse.get("0").getState();
             
             if (state.compareTo("RUNNING") != 0) {
@@ -936,81 +811,35 @@ public class StepDefinitions {
 
         for (int index = 0; index < organizationIds.length; index++) {
 
-            ListApplicationServiceBindingsRequest request = ListApplicationServiceBindingsRequest.builder()
-                    .applicationId(testAppIds[index][0])
-                    .build();
-            ListApplicationServiceBindingsResponse response = cfclient.applicationsV2()
-                    .listServiceBindings(request)
-                    .get();
+            ListApplicationServiceBindingsResponse response = cfapi
+                    .listApplicationServiceBindings(testAppIds[index][0]);
             String bindingId = response.getResources().get(0).getMetadata().getId();
-
-            cfclient.serviceBindings().delete(DeleteServiceBindingRequest.builder()
-                    .serviceBindingId(bindingId)
-                    .build())
-            .get();
-
-            cfclient.serviceInstances().delete(DeleteServiceInstanceRequest.builder()
-                    .serviceInstanceId(serviceInstanceIds[index])
-                    .build())
-            .get();
-
-            cfclient.servicePlanVisibilities()
-            .delete(DeleteServicePlanVisibilityRequest.builder()
-                    .servicePlanVisibilityId(planVisibilityGuids[index])
-                    .build())
-                .get();
-
-            cfclient.routes().delete(DeleteRouteRequest.builder()
-                    .routeId(routeIds[index][0])
-                    .build())
-            .get();
-
-
-
-            cfclient.applicationsV2().delete(DeleteApplicationRequest.builder()
-                    .applicationId(testAppIds[index][0])
-                    .build())
-            .get();
-
-            cfclient.spaces().delete(DeleteSpaceRequest.builder()
-                    .spaceId(spaceIds[index][0])
-                    .build())
-            .get();
+            cfapi.deleteServiceBinding(bindingId);
+            cfapi.deleteServiceInstance(serviceInstanceIds[index]);
+            cfapi.deleteServicePlanVisibility(planVisibilityGuids[index]);
+            cfapi.deleteRoute(routeIds[index][0]);
+            cfapi.deleteApplication(testAppIds[index][0]);
+            cfapi.deleteSpace(spaceIds[index][0]);
         }
 
         if (serviceBrokerId != null && !brokerAlreadyCreated) {
-            cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
-                    .serviceBrokerId(serviceBrokerId)
-                    .build())
-            .get();
+            cfapi.deleteServiceBroker(serviceBrokerId);
         }
     }
 
     @Before({"@transientmodeInstanceDeletion"})
-    public static void before_transientmodeInstanceDeletion() {
-        ListServiceBrokersRequest brokerRequest = ListServiceBrokersRequest.builder()
-                .name(serviceBrokerName)
-                .build();
+    public void before_transientmodeInstanceDeletion() {
 
-        ListServiceBrokersResponse brokerResponse = cfclient.serviceBrokers()
-                .list(brokerRequest)
-                .get();
-
+        ListServiceBrokersResponse brokerResponse = cfapi.listServiceBroker();
         String serviceId = "";
+        
         if (brokerResponse.getTotalResults() == 0) {
             log.error("Service broker with name : " + serviceBrokerName + " does not exists");
             log.info("creating service broker");
 
-            CreateServiceBrokerRequest request = CreateServiceBrokerRequest.builder()
-                    .brokerUrl(autosleepUrl)
-                    .name(serviceBrokerName)
-                    .authenticationUsername(cfUsername)
-                    .authenticationPassword(cfUserPassword)
-                    .build();
-
-            CreateServiceBrokerResponse response = cfclient.serviceBrokers()
-                    .create(request)
-                    .get();
+            CreateServiceBrokerResponse response = cfapi
+                    .createServiceBroker(autosleepUrl, serviceBrokerName, cfUsername, cfUserPassword);
+            
             serviceBrokerId = response.getMetadata().getId();
             brokerAlreadyCreated = false;
         } else {
@@ -1031,22 +860,14 @@ public class StepDefinitions {
 
                 if (serviceId != null) {
                     servicePlanId = getServicePlanId(serviceId);
-                    CreateServicePlanVisibilityResponse visibilityResponse = cfclient.servicePlanVisibilities()
-                            .create(CreateServicePlanVisibilityRequest.builder()
-                                    .servicePlanId(servicePlanId)
-                                    .organizationId(organizationIds[index])
-                                    .build())
-                            .get();
+                    CreateServicePlanVisibilityResponse visibilityResponse = cfapi
+                            .createServicePlanVisibility(servicePlanId, organizationIds[index]);
 
                     planVisibilityGuids[index] = visibilityResponse.getMetadata().getId();
 
                     try {
-                        CreateSpaceResponse spaceResponse = cfclient.spaces()
-                                .create(CreateSpaceRequest.builder()
-                                        .organizationId(organizationIds[index])
-                                        .name("space" + System.nanoTime())
-                                        .build())
-                                .get();
+                        CreateSpaceResponse spaceResponse = cfapi
+                                .createSpace(organizationIds[index], "space" + System.nanoTime());
 
                         spaceIds[index][0] = spaceResponse.getMetadata().getId();
 
@@ -1067,27 +888,19 @@ public class StepDefinitions {
     public void we_delete_the_service_instance() throws Throwable {
 
         for (int index = 0; index < organizationIds.length; index++) {
-            DeleteServiceInstanceRequest request = DeleteServiceInstanceRequest.builder()
-                    .serviceInstanceId(serviceInstanceIds[index])
-                    .build();
-            cfclient.serviceInstances().delete(request).get();
-
+            cfapi.deleteServiceInstance(serviceInstanceIds[index]);
             // Delay for delete job to complete
             Thread.sleep(5000);
         }
     }
 
     @Then("^the service instance gets deleted from the space within the organization$")
-    public static void the_service_instance_gets_deleted_from_the_space_within_the_organization() {
+    public void the_service_instance_gets_deleted_from_the_space_within_the_organization() {
 
         for (int index = 0; index < organizationIds.length; index++) {
             if (organizationIds[index] != null) {
-                ListServiceInstancesResponse responseForFirstSpace = cfclient.serviceInstances()
-                        .list(ListServiceInstancesRequest.builder()
-                                .organizationId(organizationIds[index])
-                                .spaceId(spaceIds[index][0])
-                                .build())
-                        .get();
+                ListServiceInstancesResponse responseForFirstSpace = cfapi
+                        .listServiceInstance(organizationIds[index], spaceIds[index][0]);
                 instanceCount = responseForFirstSpace.getTotalResults();
 
                 assertEquals(0, instanceCount);
@@ -1104,24 +917,12 @@ public class StepDefinitions {
         log.info("Executing post scenario");
 
         for (int index = 0; index < organizationIds.length; index++) {
-
-            cfclient.servicePlanVisibilities()
-            .delete(DeleteServicePlanVisibilityRequest.builder()
-                    .servicePlanVisibilityId(planVisibilityGuids[index])
-                    .build())
-                .get();
-
-            cfclient.spaces().delete(DeleteSpaceRequest.builder()
-                    .spaceId(spaceIds[index][0])
-                    .build())
-            .get();
+            cfapi.deleteServicePlanVisibility(planVisibilityGuids[index]);
+            cfapi.deleteSpace(spaceIds[index][0]);
         }
 
         if (serviceBrokerId != null && !brokerAlreadyCreated) {
-            cfclient.serviceBrokers().delete(DeleteServiceBrokerRequest.builder()
-                    .serviceBrokerId(serviceBrokerId)
-                    .build())
-            .get();
+            cfapi.deleteServiceBroker(serviceBrokerId);
         }
     }
 }
