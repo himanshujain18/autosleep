@@ -30,8 +30,6 @@ Force Tags      Service broker
 5) delete service instance
     [Documentation]     Delete service instance
     Delete service instance
-    ${maxToWait}=      Evaluate  2*${DEFAULT_INACTIVITY_IN_S}
-    Wait Until Keyword Succeeds     ${maxToWait}  3s  Should not be known by service
 
 6) delete service broker
     [Documentation]     Delete service broker
