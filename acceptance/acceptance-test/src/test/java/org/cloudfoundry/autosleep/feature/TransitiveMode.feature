@@ -15,5 +15,5 @@ Scenario: Service instance in transitive mode are temporarily opted out after un
 Scenario: Service instance in transitive mode can be deleted
     Given a cloud foundry landscape with autosleep application deployed on it
     And an autosleep service instance in transitive mode is present in a space of an organization
-    When we delete the service instance
+    When a request is made to delete the service instance
     Then the service instance gets deleted from the space within the organization

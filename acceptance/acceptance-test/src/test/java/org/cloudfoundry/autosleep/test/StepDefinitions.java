@@ -124,8 +124,8 @@ public class StepDefinitions {
                     }
                 }
             }
-        } catch (RuntimeException e) {
-            log.error("Runtime Exception : " + e);
+        } catch (RuntimeException re) {
+            log.error("Runtime Exception : " + re);
         } catch (Exception e) {
             log.error("Error while reading file : " + e);
         }
@@ -193,10 +193,10 @@ public class StepDefinitions {
             JSONObject element = (JSONObject) jsonArray.get(0);
 
             serviceName = element.getString("name");
-        } catch (HttpClientErrorException e) {
+        } catch (HttpClientErrorException he) {
             log.error("Autosleep service not available");
-        } catch (RuntimeException e) {
-            log.error("Error Fetching Catalog : " + e);
+        } catch (RuntimeException re) {
+            log.error("Error Fetching Catalog : " + re);
         }
         return serviceName;
     }
@@ -396,12 +396,12 @@ public class StepDefinitions {
                 rest.exchange(autosleepUrl + "/v1/enrolled-orgs/" + organizationIds[index],
                         HttpMethod.PUT, requestEntity, String.class);
 
-            } catch (HttpClientErrorException e) {
+            } catch (HttpClientErrorException he) {
                 status[index] = 400; 
                 result[index] = "Organization : \"" 
                         + organizationNames[index] + "\" could not be found";
-            } catch (RuntimeException e) {
-                log.error("Error completing Pre Scenario Execution : " + e);
+            } catch (RuntimeException re) {
+                log.error("Error completing Pre Scenario Execution : " + re);
             }
         }
     }
@@ -478,10 +478,10 @@ public class StepDefinitions {
                 result[index] = response.getBody();
                 status[index] = response.getStatusCode().value();
 
-            } catch (HttpClientErrorException e) {
+            } catch (HttpClientErrorException he) {
                 status[index] = 404;
-            } catch (RuntimeException e) {
-                log.error("Error Fetching Organization details : " + e);
+            } catch (RuntimeException re) {
+                log.error("Error Fetching Organization details : " + re);
             }
         }
     }
@@ -537,12 +537,12 @@ public class StepDefinitions {
                 rest.exchange(autosleepUrl + "/v1/enrolled-orgs/" + organizationIds[index],
                         HttpMethod.PUT, requestEntity, String.class);
 
-            } catch (HttpClientErrorException e) {
+            } catch (HttpClientErrorException he) {
                 status[index] = 400; 
                 result[index] = "Organization : \"" 
                         + organizationNames[index] + "\" could not be found";
-            } catch (RuntimeException e) {
-                log.error("Error completing Pre Scenario Execution : " + e);
+            } catch (RuntimeException re) {
+                log.error("Error completing Pre Scenario Execution : " + re);
             }
         }
     }
@@ -597,10 +597,10 @@ public class StepDefinitions {
 
                 Thread.currentThread();
                 Thread.sleep(20000);
-            } catch (HttpClientErrorException e) {
+            } catch (HttpClientErrorException he) {
                 status[index] = 404;
-            } catch (RuntimeException e) {
-                log.error("Error deleting organization details : " + e);
+            } catch (RuntimeException re) {
+                log.error("Error deleting organization details : " + re);
             }
         }
     }
@@ -645,10 +645,10 @@ public class StepDefinitions {
                         + organizationIds[index], HttpMethod.DELETE, requestEntity, String.class);
 
                 log.info("Post scenario execution completed. Status : " + response.getStatusCode().value());
-            } catch (HttpClientErrorException e) {
-                log.error("Error completing post scenario execution : " + e);
-            } catch (RuntimeException e) {
-                log.error("Error completing post scenario execution : " + e);
+            } catch (HttpClientErrorException he) {
+                log.error("Error completing post scenario execution : " + he);
+            } catch (RuntimeException re) {
+                log.error("Error completing post scenario execution : " + re);
             }
         }
         
@@ -662,9 +662,7 @@ public class StepDefinitions {
             }
         }
 
-        if (serviceBrokerId != null && !brokerAlreadyCreated) {
-            cfapi.deleteServiceBroker(serviceBrokerId); 
-        }
+        deleteServiceBroker();
     }
     
     @After({"@OrganizationFound"})
@@ -693,10 +691,10 @@ public class StepDefinitions {
                         + organizationIds[index], HttpMethod.DELETE, requestEntity, String.class);
 
                 log.info("Post scenario execution completed. Status : " + response.getStatusCode().value());
-            } catch (HttpClientErrorException e) {
-                log.error("Error completing post scenario execution : " + e);
-            } catch (RuntimeException e) {
-                log.error("Error completing post scenario execution : " + e);
+            } catch (HttpClientErrorException he) {
+                log.error("Error completing post scenario execution : " + he);
+            } catch (RuntimeException re) {
+                log.error("Error completing post scenario execution : " + re);
             }
         }
         
@@ -711,9 +709,7 @@ public class StepDefinitions {
             }
         }
 
-        if (serviceBrokerId != null && !brokerAlreadyCreated) {
-            cfapi.deleteServiceBroker(serviceBrokerId);
-        }
+        deleteServiceBroker();
     }
     
     @After({"@OrganizationFoundForUnenroll"})
@@ -822,9 +818,7 @@ public class StepDefinitions {
             cfapi.deleteSpace(spaceIds[index][0]);
         }
 
-        if (serviceBrokerId != null && !brokerAlreadyCreated) {
-            cfapi.deleteServiceBroker(serviceBrokerId);
-        }
+        deleteServiceBroker();
     }
 
     @Before({"@transientmodeInstanceDeletion"})
@@ -884,8 +878,8 @@ public class StepDefinitions {
         }
     }
 
-    @When("^we delete the service instance$")
-    public void we_delete_the_service_instance() throws Throwable {
+    @When("^a request is made to delete the service instance$")
+    public void a_request_is_made_to_delete_the_service_instance() throws Throwable {
 
         for (int index = 0; index < organizationIds.length; index++) {
             cfapi.deleteServiceInstance(serviceInstanceIds[index]);
@@ -921,6 +915,10 @@ public class StepDefinitions {
             cfapi.deleteSpace(spaceIds[index][0]);
         }
 
+        deleteServiceBroker();
+    }
+    
+    public void deleteServiceBroker() {
         if (serviceBrokerId != null && !brokerAlreadyCreated) {
             cfapi.deleteServiceBroker(serviceBrokerId);
         }

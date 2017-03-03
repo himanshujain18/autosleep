@@ -59,40 +59,44 @@ public class CloudFoundryApi {
     }
 
     public ListOrganizationsResponse listOrganizations() {
-        ListOrganizationsRequest request = ListOrganizationsRequest.builder().build();
-        return cfclient.organizations().list(request).get();
+        return cfclient.organizations()
+                .list(ListOrganizationsRequest.builder()
+                      .build())
+                .get();
     }
     
     public ListServicesResponse listServices(String serviceName) {
-        ListServicesRequest request = ListServicesRequest.builder().label(serviceName).build();
-        return cfclient.services().list(request).get();      
+        return cfclient.services()
+                .list(ListServicesRequest.builder()
+                      .label(serviceName)
+                      .build())
+                .get();      
     }
     
     public ListServicePlansResponse listServicePlan(String serviceId) {
-        ListServicePlansRequest request = ListServicePlansRequest.builder().serviceId(serviceId).build();
-        return cfclient.servicePlans().list(request).get();
+        return cfclient.servicePlans()
+                .list(ListServicePlansRequest.builder()
+                      .serviceId(serviceId)
+                      .build())
+                .get();
     }
     
     public ListServiceBrokersResponse listServiceBroker() {
-        ListServiceBrokersRequest brokerRequest = ListServiceBrokersRequest.builder()
-                .build();
-        
         return cfclient.serviceBrokers()
-                .list(brokerRequest)
+                .list(ListServiceBrokersRequest.builder()
+                      .build())
                 .get();
     }
     
     public CreateServiceBrokerResponse createServiceBroker(String brokerUrl, String brokerName,
             String brokerUserName, String brokerPassword) {
-        CreateServiceBrokerRequest request = CreateServiceBrokerRequest.builder()
-                .brokerUrl(brokerUrl)
-                .name(brokerName)
-                .authenticationUsername(brokerUserName)
-                .authenticationPassword(brokerPassword)
-                .build();
-        
         return cfclient.serviceBrokers()
-                .create(request)
+                .create(CreateServiceBrokerRequest.builder()
+                        .brokerUrl(brokerUrl)
+                        .name(brokerName)
+                        .authenticationUsername(brokerUserName)
+                        .authenticationPassword(brokerPassword)
+                        .build())
                 .get();
     }
     
@@ -172,12 +176,10 @@ public class CloudFoundryApi {
     }
     
     public ApplicationStatisticsResponse applicationStatistics(String applicationId) {
-        ApplicationStatisticsRequest stats = ApplicationStatisticsRequest.builder()
-                .applicationId(applicationId)
-                .build();
-        
         return cfclient.applicationsV2()
-                .statistics(stats)
+                .statistics(ApplicationStatisticsRequest.builder()
+                            .applicationId(applicationId)
+                            .build())
                 .get();
     }
     
@@ -191,12 +193,10 @@ public class CloudFoundryApi {
     }
     
     public ListApplicationServiceBindingsResponse listApplicationServiceBindings(String applicationId) {
-        ListApplicationServiceBindingsRequest appBindRequest = ListApplicationServiceBindingsRequest.builder()
-                .applicationId(applicationId)
-                .build();
-        
         return cfclient.applicationsV2()
-                .listServiceBindings(appBindRequest)
+                .listServiceBindings(ListApplicationServiceBindingsRequest.builder()
+                                     .applicationId(applicationId)
+                                     .build())
                 .get();
     }
     
@@ -269,15 +269,13 @@ public class CloudFoundryApi {
     
     public CreateServiceInstanceResponse createServiceInstance(String serviceName, String spaceId,
             String planId, Map<String, Object> requestParameters) {
-        CreateServiceInstanceRequest request = CreateServiceInstanceRequest.builder()
-                .name(serviceName)
-                .spaceId(spaceId)
-                .servicePlanId(planId)
-                .parameters(requestParameters)
-                .build();
-        
         return cfclient.serviceInstances()
-                .create(request)
+                .create(CreateServiceInstanceRequest.builder()
+                        .name(serviceName)
+                        .spaceId(spaceId)
+                        .servicePlanId(planId)
+                        .parameters(requestParameters)
+                        .build())
                 .get();
     }
 }
